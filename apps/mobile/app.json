@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "ASTU Garment",
+    "slug": "astu-garment",
+    "orientation": "portrait",
+    "scheme": "astugarment",
+    "userInterfaceStyle": "light",
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icons/adaptive_icon.png",
+        "monochromeImage": "./assets/icons/adaptive_icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.astugarment.mobile",
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0ea5e9",
+        "image": "./assets/icons/adaptive_icon.png",
+          "imageWidth": 76
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ],
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ff6650a8-da5a-4671-803a-fb88a320eec6"
+      }
+    },
+    "owner": "jinc-team"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "name": "astu-express-api",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --minify",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "wrangler d1 migrations apply r2-express-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply r2-express-db --remote",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/zod-validator": "^0.9.1",
+    "@astu/shared": "workspace:*",
+    "better-auth": "^1.7.1",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.13.5",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260825.1",
+    "drizzle-kit": "^0.31.10",
+    "typescript": "~5.7.3",
+    "wrangler": "^4.110.0"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "@astu/shared",
+  "version": "3.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.2"
+  }
+}

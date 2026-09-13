@@ -1,0 +1,48 @@
+name: Enterprise Monorepo Quality & Build Gate
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Typecheck & Build Matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Restore pnpm Cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install Monorepo Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Global TypeScript Typecheck Gate
+        run: pnpm run typecheck
+
+      - name: Run Global Production Build Gate
+        run: pnpm run build

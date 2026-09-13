@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "skills": {
+    "anti-ui-slop": {
+      "source": "uizze.com",
+      "sourceUrl": "https://uizze.com/",
+      "sourceType": "well-known",
+      "computedHash": "cdb9293f9d8461b525a42949d5f3509754c42efa2eab11f20d406b16270eb867",
+      "wellKnownDigest": "sha256:c3dc1a035894db5e60d3cde5e06147c660220f1cffacf8b7469b80f12309bc08"
+    },
+    "backend-testing": {
+      "source": "akillness/jeo-skills",
+      "sourceType": "github",
+      "skillPath": ".agent-skills/backend-testing/SKILL.md",
+      "computedHash": "8b5754e96a48694e141a35684ca2fbdbcbe682bc57e9a25c314707b9e386c07b"
+    },
+    "better-auth-security-best-practices": {
+      "source": "better-auth/skills",
+      "sourceType": "github",
+      "skillPath": "security/SKILL.md",
+      "computedHash": "7a230edf3a24ce18162cb4379f59b6a19b8d24ca04db530609d0f15cede556dc"
+    },
+    "drizzle-best-practices": {
+      "source": "honra-io/drizzle-best-practices",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "c723c157f3af98486d64dea4a1c1250ca0c57e1d0cdd426a6c301f844dcdbaed"
+    },
+    "frontend-ui-engineering": {
+      "source": "addyosmani/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-ui-engineering/SKILL.md",
+      "computedHash": "cb4e981ecb5f701b451fc4e937a38049b49fd4523f213e06cffbd00b007060dc"
+    },
+    "improve-codebase-architecture": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/improve-codebase-architecture/SKILL.md",
+      "computedHash": "2449db6ab1ded9581f69fcc56c1f64818112d05e271fd4c5da23c6523f9d3d9d"
+    },
+    "security-and-hardening": {
+      "source": "addyosmani/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/security-and-hardening/SKILL.md",
+      "computedHash": "310204bc4814d83a196d88e18a75c50014a906d122635d5cc0dd4c1afd2a7579"
+    },
+    "security-audit": {
+      "source": "cloudflare/security-audit-skill",
+      "sourceType": "github",
+      "skillPath": "skills/security-audit/SKILL.md",
+      "computedHash": "02a15f2226610f8c9d23732b9f11fe64865f35b1c26cd0560db370f441e9a199"
+    },
+    "security-best-practices": {
+      "source": "openai/skills",
+      "sourceType": "github",
+      "skillPath": "skills/.curated/security-best-practices/SKILL.md",
+      "computedHash": "c27616fb4e27999605b90b261dc729784420c8d77bd1a98748384ffaa5b35704"
+    },
+    "ui-design": {
+      "source": "uizze.com",
+      "sourceUrl": "https://uizze.com/",
+      "sourceType": "well-known",
+      "computedHash": "fe14d1158abb50fdece6abe03ade1d8d6d5b2ef8b7f6914d65193a30a3d48712",
+      "wellKnownDigest": "sha256:31db513e7c2d956be22792661e840c44cee474f220d2cce885fa93333a0e8bae"
+    },
+    "ui-radar": {
+      "source": "uizze.com",
+      "sourceUrl": "https://uizze.com/",
+      "sourceType": "well-known",
+      "computedHash": "34305420bba52f3fe7d1d3b2dd355b64ccf12de7411cbbf4557a1231e8ef8ddb",
+      "wellKnownDigest": "sha256:461cf4d25b9e74840cb6f20ab81751ec5352dbcb28dac8e3bce001602965279e"
+    },
+    "vercel-composition-patterns": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/composition-patterns/SKILL.md",
+      "computedHash": "575757e3e25761c8c562d6e395d29f0b76c98b1273c0bd72d88e6ab1bc9c7d42"
+    },
+    "vercel-react-best-practices": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/react-best-practices/SKILL.md",
+      "computedHash": "ca7b0c0c6e5f2750043f7f0cd72d16ac4e2abc48f9b5500d047a4b77a2506212"
+    },
+    "web-design-guidelines": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/web-design-guidelines/SKILL.md",
+      "computedHash": "f3bc47f890f42a44db1007ab390709ec368e4b8c089baee6b0007182236ac474"
+    }
+  }
+}

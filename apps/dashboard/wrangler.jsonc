@@ -1,0 +1,19 @@
+{
+<<<<<<< HEAD
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "astu-express-dashboard",
+  "compatibility_date": "2026-08-26",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+=======
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "astu-garment-dashboard",
+	"compatibility_date": "2026-08-26",
+	"assets": {
+		"directory": "./dist",
+		"not_found_handling": "single-page-application"
+	}
+>>>>>>> 36c76f4793ab648d0e50c1f2b444aa3513f9661b
+}
