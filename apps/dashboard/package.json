@@ -9,8 +9,7 @@
     "deploy": "pnpm build && wrangler deploy",
     "typecheck": "tsc -b",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "deploy": "wrangler deploy"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@astu/api-client": "workspace:*",

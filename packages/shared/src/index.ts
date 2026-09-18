@@ -204,7 +204,7 @@ export function getAssetsBaseUrl(): string {
     return `${(globalThis as any).window.location.origin}/api/assets`;
   }
 
-  return 'https://astu-garment-api.dagimnega208.workers.dev/api/assets';
+  return 'http://localhost:8787/api/assets';
 }
 
 /**

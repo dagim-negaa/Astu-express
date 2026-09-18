@@ -1,31 +1,14 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "astu-express-api",
+	"account_id": "a9a1bc28ff0825d74a06a40ac3b07e79",
 	"main": "src/index.ts",
 	"compatibility_date": "2026-08-26",
 	"d1_databases": [
 		{
-<<<<<<< HEAD
-			"binding": "r2_express_db",
-			"database_name": "r2-express-db",
-			"database_id": "db2a091d-791d-4c39-b84c-a838c3e829a2",
-			"migrations_dir": "./drizzle/migrations"
-		},
-		{
 			"binding": "astu_express_db",
-			"database_name": "r2-express-db",
-			"database_id": "db2a091d-791d-4c39-b84c-a838c3e829a2",
-=======
-			"binding": "astu_garment_db",
-			"database_name": "astu-garment-db",
-			"database_id": "46f2c568-c7ea-4dd2-b761-aec908980d36",
-			"migrations_dir": "./drizzle/migrations"
-		},
-		{
-			"binding": "matif_garment_db",
-			"database_name": "astu-garment-db",
-			"database_id": "46f2c568-c7ea-4dd2-b761-aec908980d36",
->>>>>>> 36c76f4793ab648d0e50c1f2b444aa3513f9661b
+			"database_name": "astu-express-db",
+			"database_id": "9fe77116-fef6-4e33-a24f-78c4dab7ee2e",
 			"migrations_dir": "./drizzle/migrations"
 		}
 	],
@@ -33,54 +16,8 @@
 		"nodejs_compat"
 	],
 	"vars": {
-		"API_BASE_URL": "https://astu-garment-api.dagimnega208.workers.dev",
 		"CHAPA_SECRET_KEY": "CHASECK_TEST-pfSBD10j33oyLMh6L8wRhPmuRDW8RvLd",
 		"CHAPA_ENCRYPTION_KEY": "cI9znau4owhG2iYNpbC7ITeN",
 		"CHAPA_WEBHOOK_SECRET": "astu_webhook_secret_2026_secure_key"
-	},
-	"r2_buckets": [
-		{
-<<<<<<< HEAD
-			"binding": "astu_express_storage",
-			"bucket_name": "astu-express"
-		},
-		{
-			"binding": "astu_express",
-			"bucket_name": "astu-express"
-		},
-		{
-			"binding": "r2_express_assets",
-			"bucket_name": "astu-express"
-		},
-		{
-			"binding": "astu_express_r2",
-			"bucket_name": "astu-express"
-=======
-			"binding": "astu_g",
-			"bucket_name": "astu-g"
-		},
-		{
-			"binding": "astu_garment_r2",
-			"bucket_name": "astu-g"
-		},
-		{
-			"binding": "matif_garment_r2",
-			"bucket_name": "astu-g"
->>>>>>> 36c76f4793ab648d0e50c1f2b444aa3513f9661b
-		}
-	],
-	// "d1_databases": [
-	//   {
-	//     "binding": "MY_DB",
-	//     "database_name": "my-database",
-	//     "database_id": ""
-	//   }
-	// ],
-	// "ai": {
-	//   "binding": "AI"
-	// },
-	// "observability": {
-	//   "enabled": true,
-	//   "head_sampling_rate": 1
-	// }
+	}
 }

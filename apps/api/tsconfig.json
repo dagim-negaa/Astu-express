@@ -14,10 +14,7 @@
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx"
   },
-<<<<<<< HEAD
-=======
   "extends": "../../tsconfig.json",
->>>>>>> 36c76f4793ab648d0e50c1f2b444aa3513f9661b
   "exclude": [
     "src/**/*.test.ts"
   ]

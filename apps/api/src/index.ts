@@ -17,18 +17,15 @@ import { shipmentsRouter } from "./routes/shipments.routes";
 import { financeRouter } from "./routes/finance.routes";
 
 export type Bindings = {
-  r2_express_db?: D1Database;
   astu_express_db?: D1Database;
+  r2_express_db?: D1Database;
   astu_garment_db?: D1Database;
   matif_garment_db?: D1Database;
-<<<<<<< HEAD
-  r2_express_assets?: R2Bucket;
   astu_express_storage?: R2Bucket;
   astu_express?: R2Bucket;
   astu_express_r2?: R2Bucket;
-=======
+  r2_express_assets?: R2Bucket;
   astu_g?: R2Bucket;
->>>>>>> 36c76f4793ab648d0e50c1f2b444aa3513f9661b
   astu_garment_r2?: R2Bucket;
   matif_garment_r2?: R2Bucket;
   BETTER_AUTH_SECRET?: string;
@@ -43,27 +40,29 @@ export type Variables = {
 };
 
 export function getDb(env: any): D1Database {
-  return env?.r2_express_db || env?.astu_express_db || env?.astu_garment_db || env?.matif_garment_db;
+  return env?.astu_express_db || env?.r2_express_db || env?.astu_garment_db || env?.matif_garment_db;
 }
 
 export function getR2(env: any): R2Bucket | undefined {
-<<<<<<< HEAD
-  return env?.astu_express_storage || env?.astu_express || env?.astu_express_r2 || env?.r2_express_assets || env?.astu_garment_r2 || env?.matif_garment_r2;
-=======
-  return env?.astu_g || env?.astu_garment_r2 || env?.matif_garment_r2;
->>>>>>> 36c76f4793ab648d0e50c1f2b444aa3513f9661b
+  return (
+    env?.astu_express_storage ||
+    env?.astu_express ||
+    env?.astu_express_r2 ||
+    env?.r2_express_assets ||
+    env?.astu_g ||
+    env?.astu_garment_r2 ||
+    env?.matif_garment_r2
+  );
 }
 
 const ALLOWED_ORIGINS = [
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:3000",
+  "http://localhost:8081",
   "http://localhost:8787",
   "http://127.0.0.1:5173",
   "http://127.0.0.1:8787",
-  "https://astu-garment-dashboard.pages.dev",
-  "https://astu-garment-dashboard.dagimnega208.workers.dev",
-  "https://astu-garment-api.dagimnega208.workers.dev",
 ];
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
@@ -76,14 +75,11 @@ app.use(
       if (!origin) return "";
       if (
         ALLOWED_ORIGINS.includes(origin) ||
-<<<<<<< HEAD
-=======
         origin.endsWith(".workers.dev") ||
         origin.endsWith(".pages.dev") ||
-        origin.startsWith("astugarment://") ||
+        origin.startsWith("astuexpress://") ||
         origin.startsWith("exp://") ||
         origin.startsWith("myapp://") ||
->>>>>>> 36c76f4793ab648d0e50c1f2b444aa3513f9661b
         origin.includes("localhost") ||
         origin.includes("127.0.0.1") ||
         origin.startsWith("http://192.168.") ||
@@ -131,13 +127,8 @@ app.all("/api/auth/*", async (c) => {
 app.get("/", (c) => {
   return c.json({
     status: "online",
-<<<<<<< HEAD
-    service: "R2 Express Ethiopian Shipping & Mini ERP API",
+    service: "astu-express-api",
     version: "3.0.0",
-=======
-    service: "astu-garment-api",
-    version: "2.0.0",
->>>>>>> 36c76f4793ab648d0e50c1f2b444aa3513f9661b
     endpoints: {
       health: "/api/health",
       products: "/api/garments",
@@ -159,11 +150,7 @@ app.get("/api/health", (c) => {
   const db = getDb(c.env);
   return c.json({
     status: "healthy",
-<<<<<<< HEAD
-    service: "r2-express-api",
-=======
-    service: "astu-garment-api",
->>>>>>> 36c76f4793ab648d0e50c1f2b444aa3513f9661b
+    service: "astu-express-api",
     database: db ? "cloudflare-d1" : "fallback",
     timestamp: new Date().toISOString(),
   });

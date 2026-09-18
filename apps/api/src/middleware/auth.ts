@@ -25,11 +25,15 @@ export function resolveD1(env: any): D1Database {
 }
 
 export function resolveR2(env: any): R2Bucket | undefined {
-<<<<<<< HEAD
-  return env?.astu_express_storage || env?.astu_express || env?.astu_express_r2 || env?.r2_express_assets || env?.astu_garment_r2 || env?.matif_garment_r2;
-=======
-  return env?.astu_g || env?.astu_garment_r2 || env?.matif_garment_r2;
->>>>>>> 36c76f4793ab648d0e50c1f2b444aa3513f9661b
+  return (
+    env?.astu_express_storage ||
+    env?.astu_express ||
+    env?.astu_express_r2 ||
+    env?.r2_express_assets ||
+    env?.astu_g ||
+    env?.astu_garment_r2 ||
+    env?.matif_garment_r2
+  );
 }
 
 /**

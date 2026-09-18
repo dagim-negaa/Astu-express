@@ -145,47 +145,22 @@ Wrangler will output your live worker URL:
 
 ---
 
-<<<<<<< HEAD
 ### Step 3.7: Deploy Unified Web Platform (Storefront + Admin) to Cloudflare Workers
-The frontend is deployed directly as a native Cloudflare Worker using Static Assets (no Cloudflare Pages needed):
+The frontend is deployed directly as a native Cloudflare Worker using Static Assets:
 1. Build and deploy the unified web app in one command:
-=======
-### Step 3.7: Deploy Web Dashboard to Cloudflare Workers (or Pages)
-1. Build the dashboard:
->>>>>>> 36c76f4793ab648d0e50c1f2b444aa3513f9661b
    ```bash
    pnpm --filter astu-express-dashboard deploy
    ```
-<<<<<<< HEAD
 2. Your live frontend will be active at:
    `https://astu-express-dashboard.<your-subdomain>.workers.dev`
 
 ---
 
-## 4. Active Cloudflare Production Deployment (dagimnega208@gmail.com)
+## 4. Active Cloudflare Production Deployment (dagimnega44@gmail.com)
 
-* **Dashboard & Storefront Worker**: `https://astu-express-dashboard.dagimnega208.workers.dev`
-* **Backend API Worker**: `https://astu-express-api.dagimnega208.workers.dev`
-* **D1 Database**: `r2-express-db` (`db2a091d-791d-4c39-b84c-a838c3e829a2`)
-* **R2 Bucket**: `astu-express` (exclusive storage bucket)
-* **Cloudflare Pages**: Completely removed/deleted. Everything runs 100% on Cloudflare Workers.
-=======
-2. Deploy directly as a **Cloudflare Worker**:
-   ```bash
-   pnpm --filter dashboard run deploy
-   ```
-   Wrangler will output your live Dashboard Worker URL:
-   `https://astu-garment-dashboard.<your-subdomain>.workers.dev`
+* **Account ID**: `a9a1bc28ff0825d74a06a40ac3b07e79`
+* **D1 Database**: `astu-express-db` (`9fe77116-fef6-4e33-a24f-78c4dab7ee2e`)
+* **Backend API Worker**: `astu-express-api`
+* **Dashboard Worker**: `astu-express-dashboard`
+* **Migrations**: Applied to remote Cloudflare D1 via `pnpm --filter astu-express-api db:migrate:remote`
 
-*(Optional: Deploy to Cloudflare Pages instead)*:
-   ```bash
-   npx wrangler pages deploy apps/dashboard/dist --project-name=astu-garment-dashboard
-   ```
-
----
-
-
-### Step 3.8: Mobile App Production Configuration
-In `apps/mobile/.env` or EAS project secrets:
-* `EXPO_PUBLIC_API_URL` = `https://astu-garment-api.<your-subdomain>.workers.dev`
->>>>>>> 36c76f4793ab648d0e50c1f2b444aa3513f9661b
