@@ -12,6 +12,7 @@ DELETE FROM customers;
 DELETE FROM suppliers;
 DELETE FROM session;
 DELETE FROM verification;
+DELETE FROM storage_objects;
 DELETE FROM account WHERE userId IN (SELECT id FROM user WHERE lower(COALESCE(role, 'customer')) NOT IN ('admin', 'manager', 'operator', 'owner'));
 DELETE FROM user WHERE lower(COALESCE(role, 'customer')) NOT IN ('admin', 'manager', 'operator', 'owner');
 
