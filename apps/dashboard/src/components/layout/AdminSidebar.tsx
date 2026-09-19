@@ -4,7 +4,6 @@ import {
   LayoutDashboard,
   Package,
   ShoppingBag,
-  Layers,
   Users,
   UserCheck,
   Settings,
@@ -16,6 +15,8 @@ import {
   PackageCheck,
   BarChart3,
   ExternalLink,
+  Landmark,
+  Warehouse,
 } from 'lucide-react';
 import { useAdminStore } from '../../store/AdminStore';
 
@@ -37,11 +38,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isCollapsed, onToggl
     { label: 'Overview', path: '/admin', icon: LayoutDashboard },
     { label: 'Products', path: '/admin/products', icon: Package },
     { label: 'Orders', path: '/admin/orders', icon: ShoppingBag },
-    { label: 'Inventory', path: '/admin/inventory', icon: Layers },
+    { label: 'Warehouse & Inventory', path: '/admin/warehouse', icon: Warehouse },
     { label: 'Customers', path: '/admin/customers', icon: Users },
     { label: 'Suppliers', path: '/admin/suppliers', icon: Truck },
-    { label: 'Purchases', path: '/admin/purchases', icon: ShoppingCart },
+    { label: 'Purchases (GRN)', path: '/admin/purchases', icon: ShoppingCart },
     { label: 'Expenses', path: '/admin/expenses', icon: Receipt },
+    { label: 'Finance & Banking', path: '/admin/finance', icon: Landmark },
     { label: 'Shipments', path: '/admin/shipments', icon: PackageCheck },
     { label: 'Reports', path: '/admin/reports', icon: BarChart3 },
     { label: 'Staff & Team', path: '/admin/staff', icon: UserCheck },
@@ -50,28 +52,25 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isCollapsed, onToggl
 
   // Role-Based Access Control filtering
   const navItems = allNavItems.filter((item) => {
-    if (isMaster) return true; // Admin & Owner can do everything
+    if (isMaster) return true; // Admin & Owner have access to everything
     if (isManager) {
-      // Manager manages supplier purchase orders, expenses, and shipments
-      return ['Overview', 'Suppliers', 'Purchases', 'Expenses', 'Shipments', 'Inventory', 'Reports'].includes(item.label);
+      return ['Overview', 'Products', 'Orders', 'Warehouse & Inventory', 'Customers', 'Suppliers', 'Purchases (GRN)', 'Expenses', 'Finance & Banking', 'Shipments', 'Reports'].includes(item.label);
     }
     if (isOperator) {
-      // Operator manages product orders, customer image uploads, products
-      return ['Overview', 'Products', 'Orders', 'Customers'].includes(item.label);
+      return ['Overview', 'Products', 'Orders', 'Warehouse & Inventory', 'Customers', 'Suppliers', 'Purchases (GRN)', 'Expenses', 'Finance & Banking', 'Shipments'].includes(item.label);
     }
-    return false;
+    return true;
   });
 
   return (
     <aside
       style={{
         width: isCollapsed ? '80px' : '280px',
-        backgroundColor: '#0a1120',
+        backgroundColor: '#0f172a',
         color: '#ffffff',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         borderRight: '1px solid #1e293b',
         zIndex: 30,
         height: '100vh',
@@ -100,25 +99,24 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isCollapsed, onToggl
             style={{
               width: '2.2rem',
               height: '2.2rem',
-              borderRadius: '0.5rem',
-              background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+              borderRadius: '0.375rem',
+              backgroundColor: '#0284c7',
               color: '#ffffff',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              fontSize: '0.75rem',
               fontWeight: 900,
-              fontSize: '0.95rem',
-              fontFamily: 'Hanken Grotesk, sans-serif',
+              letterSpacing: '-0.02em',
               flexShrink: 0,
-              boxShadow: '0 2px 8px rgba(2, 132, 199, 0.4)',
             }}
           >
-            R2
+            ASTU
           </div>
           {!isCollapsed && (
             <div style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>
               <h1 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, fontFamily: 'Hanken Grotesk, sans-serif', letterSpacing: '0.04em', color: '#ffffff', lineHeight: 1.1 }}>
-                R2 EXPRESS
+                ASTU EXPRESS
               </h1>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.15rem' }}>
                 <span style={{ fontSize: '0.625rem', color: '#38bdf8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.09em' }}>
@@ -155,7 +153,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isCollapsed, onToggl
                   textDecoration: 'none',
                   fontWeight: isActive ? 700 : 500,
                   fontSize: '0.9rem',
-                  transition: 'all 0.15s ease',
                   position: 'relative',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
@@ -190,7 +187,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isCollapsed, onToggl
             textDecoration: 'none',
             fontSize: '0.8125rem',
             fontWeight: 600,
-            transition: 'background-color 0.15s ease',
           }}
         >
           <ExternalLink size={16} />

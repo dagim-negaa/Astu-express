@@ -1,9 +1,11 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, useNavigate, Link } from '@tanstack/react-router';
 import { useState, useEffect } from 'react';
 import { apiClient } from '../lib/api';
+import { authClient } from '../lib/auth-client';
 import { useAdminStore } from '../store/AdminStore';
+import { useCustomerAuth } from '../hooks/useCustomerAuth';
 import { StorefrontLayout } from '../components/storefront/StorefrontLayout';
-import { LogIn, UserPlus, Shield, CheckCircle2, AlertCircle } from 'lucide-react';
+import { LogIn, UserPlus, Shield, CheckCircle2, AlertCircle, UserCheck, LogOut, ShoppingBag, Package } from 'lucide-react';
 
 export const Route = createFileRoute('/auth')({
   component: AuthComponent,
@@ -12,6 +14,7 @@ export const Route = createFileRoute('/auth')({
 function AuthComponent() {
   const navigate = useNavigate();
   const { login: adminLogin } = useAdminStore();
+  const { customer, isLoggedIn, logout, setCustomerSession } = useCustomerAuth();
   
   // Tabs: 'customer_login' | 'customer_register' | 'admin_login'
   const [activeTab, setActiveTab] = useState<'customer_login' | 'customer_register' | 'admin_login'>('customer_login');
@@ -53,29 +56,96 @@ function AuthComponent() {
 
     try {
       if (activeTab === 'customer_login') {
-        const result = await apiClient.signIn(customerForm.email, customerForm.password);
+        const cleanEmail = customerForm.email.trim().toLowerCase();
+        let result = await apiClient.signIn(cleanEmail, customerForm.password);
+        let token = result.data?.token || result.data?.session?.token;
+        let userData = result.data?.user;
+
         if (!result.success) {
-          setError(result.error || 'Customer sign in failed. Please check credentials.');
-        } else {
-          setSuccessMsg('Signed in successfully! Redirecting...');
-          setTimeout(() => {
-            window.location.href = '/';
-          }, 800);
+          const baRes = await authClient.signIn.email({
+            email: cleanEmail,
+            password: customerForm.password,
+          });
+          if (baRes.error) {
+            setError(baRes.error.message || result.error || 'Customer sign in failed. Please check credentials.');
+            return;
+          }
+          token = (baRes.data as any)?.token || (baRes.data as any)?.session?.token;
+          userData = baRes.data?.user;
         }
+
+        const customerObj = {
+          id: userData?.id,
+          name: userData?.name || cleanEmail.split('@')[0],
+          email: userData?.email || cleanEmail,
+          phone: userData?.phone,
+          role: 'customer',
+        };
+        setCustomerSession(customerObj, token);
+
+        // Also ensure customer record exists in admin customers list
+        try {
+          await apiClient.createCustomer({
+            name: customerObj.name,
+            email: customerObj.email,
+            phone: customerObj.phone || 'N/A',
+          });
+        } catch {
+          // Backend auto-sync will handle it
+        }
+
+        setSuccessMsg('Signed in successfully! Welcome, ' + customerObj.name);
+        setTimeout(() => {
+          navigate({ to: '/' });
+        }, 600);
       } else {
-        const result = await apiClient.signUp({
-          name: customerForm.name,
-          email: customerForm.email,
+        const cleanName = customerForm.name.trim();
+        const cleanEmail = customerForm.email.trim().toLowerCase();
+        let result = await apiClient.signUp({
+          name: cleanName,
+          email: cleanEmail,
           password: customerForm.password,
         });
+        let token = result.data?.token || result.data?.session?.token;
+        let userData = result.data?.user;
+
         if (!result.success) {
-          setError(result.error || 'Customer registration failed.');
-        } else {
-          setSuccessMsg('Account created successfully! Redirecting...');
-          setTimeout(() => {
-            window.location.href = '/';
-          }, 800);
+          const baRes = await authClient.signUp.email({
+            name: cleanName,
+            email: cleanEmail,
+            password: customerForm.password,
+          });
+          if (baRes.error) {
+            setError(baRes.error.message || result.error || 'Customer registration failed.');
+            return;
+          }
+          token = (baRes.data as any)?.token || (baRes.data as any)?.session?.token;
+          userData = baRes.data?.user;
         }
+
+        const customerObj = {
+          id: userData?.id,
+          name: cleanName,
+          email: cleanEmail,
+          role: 'customer',
+        };
+        setCustomerSession(customerObj, token);
+
+        // Explicitly sync to customers directory
+        try {
+          await apiClient.createCustomer({
+            name: cleanName,
+            email: cleanEmail,
+            phone: 'N/A',
+          });
+        } catch {
+          // Backend auto-sync will handle it
+        }
+
+        setSuccessMsg('Customer account registered successfully! Welcome, ' + cleanName);
+        setTimeout(() => {
+          navigate({ to: '/' });
+        }, 600);
       }
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
@@ -93,7 +163,7 @@ function AuthComponent() {
     try {
       const res = await adminLogin(adminForm.email, adminForm.password);
       if (res.success) {
-        setSuccessMsg('Staff credentials verified! Entering R2 Express ERP...');
+        setSuccessMsg('Staff credentials verified! Entering ASTU Express ERP...');
         setTimeout(() => {
           navigate({ to: '/admin' });
         }, 500);
@@ -107,6 +177,72 @@ function AuthComponent() {
     }
   };
 
+  // When customer is already logged in, do not display registration or admin login!
+  if (isLoggedIn && customer) {
+    return (
+      <StorefrontLayout>
+        <div className="min-h-[70vh] flex items-center justify-center px-4 py-12">
+          <div className="w-full max-w-lg bg-white rounded-3xl p-8 border border-slate-200 shadow-sm text-center">
+            <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+              <UserCheck size={32} />
+            </div>
+            <div className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold rounded-full mb-3">
+              <span>● Active Customer Session</span>
+            </div>
+            <h1 className="text-2xl font-extrabold text-slate-900">
+              Welcome, {customer.name}!
+            </h1>
+            <p className="text-sm text-slate-500 mt-1 mb-6">
+              You are currently logged in as <strong className="text-slate-800">{customer.email}</strong>.
+              Registration and administrative sign-in forms are hidden while your customer account is active.
+            </p>
+
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 text-left mb-6 space-y-2 text-xs">
+              <div className="flex justify-between py-1 border-b border-slate-200/60">
+                <span className="text-slate-500">Customer Name:</span>
+                <span className="font-bold text-slate-900">{customer.name}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-200/60">
+                <span className="text-slate-500">Registered Email:</span>
+                <span className="font-bold text-slate-900">{customer.email}</span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-slate-500">Account Type:</span>
+                <span className="font-bold text-sky-700 uppercase tracking-wider">Ethiopian Express Customer</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <Link
+                to="/shop"
+                className="py-3 px-4 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                <ShoppingBag size={15} />
+                <span>Shop Garments</span>
+              </Link>
+              <Link
+                to="/orders"
+                search={{}}
+                className="py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Package size={15} />
+                <span>Order History</span>
+              </Link>
+            </div>
+
+            <button
+              onClick={() => logout()}
+              className="w-full py-2.5 px-4 text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
+            >
+              <LogOut size={14} />
+              <span>Sign Out of Account</span>
+            </button>
+          </div>
+        </div>
+      </StorefrontLayout>
+    );
+  }
+
   return (
     <StorefrontLayout>
       <div className="min-h-[75vh] flex items-center justify-center px-4 py-12">
@@ -115,7 +251,7 @@ function AuthComponent() {
           <div className="text-center mb-6">
             <h1 className="text-3xl font-extrabold text-slate-900">
               {activeTab === 'admin_login'
-                ? 'R2 Express Staff Portal'
+                ? 'ASTU Express Staff Portal'
                 : activeTab === 'customer_login'
                 ? 'Customer Sign In'
                 : 'Create Customer Account'}

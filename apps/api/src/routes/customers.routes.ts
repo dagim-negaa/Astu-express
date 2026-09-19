@@ -7,7 +7,7 @@ import { CreateCustomerSchema } from "@astu/shared";
 
 export const customersRouter = new Hono<Env>();
 
-customersRouter.get("/", requireRole(["admin", "Admin", "operator", "Operator"]), async (c) => {
+customersRouter.get("/", requireRole(["admin", "Admin", "operator", "Operator", "manager", "Manager", "owner", "Owner"]), async (c) => {
   try {
     const repo = new CustomerRepository(resolveD1(c.env));
     const service = new CustomerService(repo);

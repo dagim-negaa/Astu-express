@@ -1,12 +1,10 @@
 import { Hono } from 'hono';
-import { requireAuth, requireRole, resolveD1, type Env } from '../middleware/auth';
+import { optionalAuth, requireRole, resolveD1, type Env } from '../middleware/auth';
 import { ExpenseService } from '../modules/expenses/expenses.service';
 
 export const expensesRouter = new Hono<Env>();
 
-expensesRouter.use('*', requireAuth);
-
-expensesRouter.get('/', async (c) => {
+expensesRouter.get('/', optionalAuth, async (c) => {
   const category = c.req.query('category');
   const startDate = c.req.query('startDate');
   const endDate = c.req.query('endDate');
@@ -15,7 +13,7 @@ expensesRouter.get('/', async (c) => {
   return c.json({ success: true, data: expenses });
 });
 
-expensesRouter.get('/summary', async (c) => {
+expensesRouter.get('/summary', optionalAuth, async (c) => {
   const service = new ExpenseService(resolveD1(c.env));
   const summary = await service.getSummary();
   return c.json({ success: true, data: summary });

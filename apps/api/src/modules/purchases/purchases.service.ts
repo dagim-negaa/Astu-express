@@ -1,5 +1,5 @@
 import { PurchaseRepository } from './purchases.repository';
-import type { CreatePurchaseOrderInput } from './purchases.types';
+import type { CreatePurchaseOrderInput, ReceivePurchaseOrderInput } from './purchases.types';
 
 export class PurchaseService {
   private repo: PurchaseRepository;
@@ -28,9 +28,9 @@ export class PurchaseService {
     return this.repo.updateStatus(id, status);
   }
 
-  async receive(id: string) {
+  async receive(id: string, options?: ReceivePurchaseOrderInput) {
     await this.getById(id);
-    return this.repo.updateStatus(id, 'received');
+    return this.repo.receive(id, options);
   }
 
   async delete(id: string) {

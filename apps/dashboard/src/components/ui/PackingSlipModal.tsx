@@ -170,7 +170,7 @@ export const PackingSlipModal: React.FC<PackingSlipModalProps> = ({ isOpen, onCl
                 <div>
                   <span style={{ color: '#8a7a6a' }}>Channel: </span>
                   <span style={{ fontWeight: 700, color: '#211a13' }}>
-                    {order.orderSource === 'app' ? '📱 Mobile App Order' : '📞 Phone / Atelier Order'}
+                    {order.orderSource === 'app' ? 'Mobile App Order' : 'Phone / Atelier Order'}
                   </span>
                 </div>
                 <div>
@@ -188,7 +188,7 @@ export const PackingSlipModal: React.FC<PackingSlipModalProps> = ({ isOpen, onCl
                 <div>
                   <span style={{ color: '#8a7a6a' }}>Payment Status: </span>
                   <span style={{ fontWeight: 800, color: isPaid ? '#15803d' : '#b45309' }}>
-                    {isPaid ? 'PAID ✓' : (isCod ? 'PENDING (PAY UPON HANDOVER)' : 'PENDING')}
+                    {isPaid ? 'PAID' : (isCod ? 'PENDING (PAY UPON HANDOVER)' : 'PENDING')}
                   </span>
                 </div>
               </div>
@@ -200,7 +200,7 @@ export const PackingSlipModal: React.FC<PackingSlipModalProps> = ({ isOpen, onCl
             <div
               style={{
                 backgroundColor: '#fffbeb',
-                border: '2px solid #f59e0b',
+                border: '1.5px solid #f59e0b',
                 borderRadius: '0.375rem',
                 padding: '0.875rem 1rem',
                 display: 'flex',
@@ -208,10 +208,10 @@ export const PackingSlipModal: React.FC<PackingSlipModalProps> = ({ isOpen, onCl
                 gap: '0.75rem',
               }}
             >
-              <AlertTriangle size={24} color="#b45309" style={{ flexShrink: 0, marginTop: '0.1rem' }} />
+              <AlertTriangle size={20} color="#b45309" style={{ flexShrink: 0, marginTop: '0.1rem' }} />
               <div>
                 <h4 style={{ margin: 0, fontSize: '0.875rem', fontWeight: 800, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                  ⚠️ Cash on Delivery (COD) — Courier Payment Collection Required
+                  Cash on Delivery (COD) — Courier Payment Collection Required
                 </h4>
                 <p style={{ margin: '0.25rem 0 0', fontSize: '0.8125rem', color: '#78350f', lineHeight: 1.4 }}>
                   The dispatch courier must collect <strong>ETB {order.totalPriceEtb.toLocaleString()}</strong> in cash or verified mobile transfer (Telebirr/CBE) upon physical doorstep handover before releasing this garment package to the client.
@@ -233,10 +233,10 @@ export const PackingSlipModal: React.FC<PackingSlipModalProps> = ({ isOpen, onCl
                 gap: '0.65rem',
               }}
             >
-              <CheckCircle2 size={20} color="#15803d" style={{ flexShrink: 0 }} />
+              <CheckCircle2 size={18} color="#15803d" style={{ flexShrink: 0 }} />
               <div>
                 <span style={{ fontSize: '0.8125rem', fontWeight: 800, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                  ✓ Prepaid Digital Order — Do Not Collect Cash
+                  Prepaid Digital Order — Do Not Collect Cash
                 </span>
                 <span style={{ display: 'block', fontSize: '0.75rem', color: '#15803d', marginTop: '0.1rem' }}>
                   Payment settled in full via {order.paymentProvider || order.paymentMethod}. Verify recipient identity and release package.

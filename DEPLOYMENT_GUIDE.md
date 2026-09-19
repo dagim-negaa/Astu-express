@@ -1,4 +1,4 @@
-# R2 Express — Ethiopian Shipping & Mini ERP: Setup & Deployment Guide
+# ASTU Express — Ethiopian Shipping & Mini ERP: Setup & Deployment Guide
 
 This guide explains how to:
 1. Run everything **100% locally on localhost** with zero external dependencies (no old Cloudflare account, no 401 errors).

@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { useCart } from '../hooks/useCart';
 import { StorefrontLayout } from '../components/storefront/StorefrontLayout';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-react';
+import { resolveImageUrl, FALLBACK_PRODUCT_IMAGE } from '@astu/shared';
 
 export const Route = createFileRoute('/cart')({
   component: CartComponent,
@@ -47,7 +48,15 @@ function CartComponent() {
               >
                 <div className="w-20 h-20 bg-slate-100 rounded-xl overflow-hidden shrink-0 border border-slate-100">
                   {item.image ? (
-                    <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                    <img
+                      src={resolveImageUrl(item.image, 'thumb')}
+                      alt={item.title}
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = FALLBACK_PRODUCT_IMAGE;
+                      }}
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">No Image</div>
                   )}

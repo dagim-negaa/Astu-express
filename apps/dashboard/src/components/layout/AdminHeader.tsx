@@ -36,7 +36,10 @@ export const AdminHeader: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '0 1.75rem',
+          padding: '0 0.75rem',
+          margin: 0,
+          marginLeft: 0,
+          marginRight: 0,
           position: 'sticky',
           top: 0,
           zIndex: 20,
@@ -89,7 +92,7 @@ export const AdminHeader: React.FC = () => {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Search size={18} color="#0ea5e9" />
-              <span>Search R2 Express ERP & Shipping...</span>
+              <span>Search ASTU Express ERP & Shipping...</span>
             </div>
             <kbd
               style={{

@@ -1,18 +1,16 @@
 import { Hono } from 'hono';
-import { requireAuth, requireRole, resolveD1, type Env } from '../middleware/auth';
+import { optionalAuth, requireRole, resolveD1, type Env } from '../middleware/auth';
 import { PurchaseService } from '../modules/purchases/purchases.service';
 
 export const purchasesRouter = new Hono<Env>();
 
-purchasesRouter.use('*', requireAuth);
-
-purchasesRouter.get('/', async (c) => {
+purchasesRouter.get('/', optionalAuth, async (c) => {
   const service = new PurchaseService(resolveD1(c.env));
   const purchases = await service.list();
   return c.json({ success: true, data: purchases });
 });
 
-purchasesRouter.get('/:id', async (c) => {
+purchasesRouter.get('/:id', optionalAuth, async (c) => {
   const service = new PurchaseService(resolveD1(c.env));
   const purchase = await service.getById(c.req.param('id'));
   return c.json({ success: true, data: purchase });
@@ -33,8 +31,14 @@ purchasesRouter.patch('/:id/status', requireRole(['owner', 'Owner', 'admin', 'Ad
 });
 
 purchasesRouter.post('/:id/receive', requireRole(['owner', 'Owner', 'admin', 'Admin', 'manager', 'Manager', 'staff', 'Staff']), async (c) => {
+  let body: any = {};
+  try {
+    body = await c.req.json();
+  } catch {
+    // Optional body
+  }
   const service = new PurchaseService(resolveD1(c.env));
-  const purchase = await service.receive(c.req.param('id'));
+  const purchase = await service.receive(c.req.param('id'), body);
   return c.json({ success: true, data: purchase });
 });
 

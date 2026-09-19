@@ -106,7 +106,7 @@ export const RegisterSchema = z.object({
   email: z.string().email('A valid email address is required'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   phone: z.string().optional(),
-  role: z.string().optional().default('operator'),
+  role: z.string().optional().default('customer'),
 });
 export type RegisterInput = z.infer<typeof RegisterSchema>;
 
@@ -175,6 +175,9 @@ export const ProductColorSchema = z.object({
 });
 export type ProductColor = z.infer<typeof ProductColorSchema>;
 
+export const FALLBACK_PRODUCT_IMAGE =
+  'https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80';
+
 let _customAssetsBaseUrl: string | null = null;
 
 export function setAssetsBaseUrl(url: string | null | undefined): void {
@@ -189,16 +192,6 @@ export function setAssetsBaseUrl(url: string | null | undefined): void {
 export function getAssetsBaseUrl(): string {
   if (_customAssetsBaseUrl) return _customAssetsBaseUrl;
 
-  // React Native / Expo environment via EXPO_PUBLIC_API_URL
-  const globalProc = (globalThis as any)?.process;
-  if (globalProc && globalProc.env) {
-    const expoUrl = globalProc.env.EXPO_PUBLIC_API_URL;
-    if (expoUrl && typeof expoUrl === 'string' && expoUrl.trim().length > 0) {
-      const clean = expoUrl.trim().replace(/\/$/, '');
-      return clean.endsWith('/api/assets') ? clean : `${clean}/api/assets`;
-    }
-  }
-
   // Browser environment
   if (typeof globalThis !== 'undefined' && (globalThis as any).window?.location?.origin) {
     return `${(globalThis as any).window.location.origin}/api/assets`;
@@ -208,9 +201,8 @@ export function getAssetsBaseUrl(): string {
 }
 
 /**
- * Resolves an image ID or existing URL to a full CDN/API URL.
- * If imageId is already a full URL (legacy or external), rewrites localhost to active base if needed, or returns it.
- * Otherwise returns `${baseUrl}/products/${imageId}/${variant}.webp`.
+ * Resolves an image ID, R2 key, or existing URL to a full CDN/proxy URL.
+ * Prevents double-nesting prefixes and ensures R2 images are displayed reliably.
  */
 export function resolveImageUrl(
   imageIdOrUrl: string | undefined | null,
@@ -221,21 +213,87 @@ export function resolveImageUrl(
     return '';
   }
 
+  const trimmed = imageIdOrUrl.trim();
+
+  // Data URLs or Object URLs (e.g. during client-side preview upload)
+  if (trimmed.startsWith('data:') || trimmed.startsWith('blob:')) {
+    return trimmed;
+  }
+
   const base = baseUrl
     ? (baseUrl.endsWith('/api/assets') ? baseUrl : `${baseUrl.replace(/\/$/, '')}/api/assets`)
     : getAssetsBaseUrl();
   const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base;
 
-  // If already an http/https/data URL
-  if (imageIdOrUrl.startsWith('http://') || imageIdOrUrl.startsWith('https://') || imageIdOrUrl.startsWith('data:')) {
-    // If it points to localhost:8787/api/assets, rewrite it to the active backend assets URL
-    if (imageIdOrUrl.startsWith('http://localhost:8787/api/assets') && cleanBase !== 'http://localhost:8787/api/assets') {
-      return imageIdOrUrl.replace('http://localhost:8787/api/assets', cleanBase);
+  // Already a proxy or relative asset URL (e.g. /api/assets/..., /api/storage/..., /api/r2/...)
+  if (trimmed.startsWith('/api/assets/') || trimmed.startsWith('/api/storage/') || trimmed.startsWith('/api/r2/')) {
+    if (baseUrl && !trimmed.startsWith(cleanBase)) {
+      const cleanRoot = cleanBase.replace(/\/api\/assets$/, '');
+      return `${cleanRoot}${trimmed}`;
     }
-    return imageIdOrUrl;
+    return trimmed;
   }
 
-  return `${cleanBase}/products/${imageIdOrUrl}/${variant}.webp`;
+  // Full HTTP/HTTPS URLs
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    // If it points to localhost:8787/api/assets, rewrite it to active cleanBase
+    if (trimmed.startsWith('http://localhost:8787/api/assets') && cleanBase !== 'http://localhost:8787/api/assets') {
+      return trimmed.replace('http://localhost:8787/api/assets', cleanBase);
+    }
+    // If it points to an R2 domain (e.g. *.r2.dev), route through proxy to bypass private bucket restrictions
+    if (trimmed.includes('.r2.dev/') || trimmed.includes('.r2.cloudflarestorage.com/')) {
+      return `${cleanBase}/proxy?url=${encodeURIComponent(trimmed)}`;
+    }
+    return trimmed;
+  }
+
+  // If already prefixed with 'products/'
+  if (trimmed.startsWith('products/')) {
+    // If it already has an extension like .webp or .png
+    if (/\.[a-zA-Z0-9]+$/i.test(trimmed)) {
+      return `${cleanBase}/${trimmed}`;
+    }
+    return `${cleanBase}/${trimmed}/${variant}.webp`;
+  }
+
+  // If path contains other storage prefixes or already has a file extension
+  if (trimmed.startsWith('storage/') || trimmed.startsWith('r2/') || trimmed.startsWith('uploads/')) {
+    return `${cleanBase}/${trimmed}`;
+  }
+
+  if (/\.[a-zA-Z0-9]+$/i.test(trimmed)) {
+    return `${cleanBase}/${trimmed}`;
+  }
+
+  // Standard Image ID: /api/assets/products/:imageId/:variant.webp
+  return `${cleanBase}/products/${trimmed}/${variant}.webp`;
+}
+
+/**
+ * Explicitly constructs an R2 storage display proxy URL
+ */
+export function resolveR2ProxyUrl(
+  keyOrUrl: string | undefined | null,
+  variant?: ImageVariant,
+  baseUrl?: string
+): string {
+  if (!keyOrUrl || typeof keyOrUrl !== 'string' || keyOrUrl.trim().length === 0) {
+    return '';
+  }
+
+  const base = baseUrl
+    ? (baseUrl.endsWith('/api/assets') ? baseUrl : `${baseUrl.replace(/\/$/, '')}/api/assets`)
+    : getAssetsBaseUrl();
+  const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base;
+
+  const trimmed = keyOrUrl.trim();
+  const variantParam = variant ? `&variant=${variant}` : '';
+
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return `${cleanBase}/proxy?url=${encodeURIComponent(trimmed)}${variantParam}`;
+  }
+
+  return `${cleanBase}/proxy?key=${encodeURIComponent(trimmed)}${variantParam}`;
 }
 
 export const ProductSizeSchema = z.object({
@@ -377,12 +435,14 @@ export const CreateOrderSchema = z.object({
   paymentTxRef: z.string().nullable().optional(),
   paymentReference: z.string().nullable().optional(),
   paymentProvider: z.string().nullable().optional(),
+  accountId: z.string().nullable().optional(),
   paidAt: z.string().nullable().optional(),
   deliveredAt: z.string().nullable().optional(),
   confirmedReceiptAt: z.string().nullable().optional(),
   deliveryFee: z.number().nonnegative().optional(),
   discountEtb: z.number().nonnegative().optional(),
   shippingAddress: z.string().optional().default('Addis Ababa, Ethiopia'),
+  trackingNumber: z.string().nullable().optional(),
   orderSource: OrderSource.default('phone'),
   status: OrderStatus.default('pending'),
   promoCode: z.string().nullable().optional(),
@@ -392,11 +452,13 @@ export type CreateOrderInput = z.infer<typeof CreateOrderSchema>;
 export const UpdateOrderStatusSchema = z.object({
   status: OrderStatus.optional(),
   paymentStatus: z.string().optional(),
+  trackingNumber: z.string().nullable().optional(),
 });
 export type UpdateOrderStatusInput = z.infer<typeof UpdateOrderStatusSchema>;
 
 export const OrderSchema = CreateOrderSchema.extend({
   id: z.string(),
+  trackingNumber: z.string().nullable().optional(),
   createdAt: z.string(),
   updatedAt: z.string().optional(),
 });
@@ -409,6 +471,9 @@ export const OrderQuerySchema = z.object({
   status: z.string().optional(),
   email: z.string().optional(),
   customerEmail: z.string().optional(),
+  trackingNumber: z.string().optional(),
+  query: z.string().optional(),
+  q: z.string().optional(),
   orderSource: z.string().optional(),
   storeId: z.string().optional(),
   limit: z.coerce.number().int().positive().max(100).optional(),
@@ -416,6 +481,40 @@ export const OrderQuerySchema = z.object({
   page: z.coerce.number().int().positive().optional(),
 });
 export type OrderQuery = z.infer<typeof OrderQuerySchema>;
+
+export const OrderTrackingTimelineEventSchema = z.object({
+  status: z.string(),
+  title: z.string(),
+  description: z.string(),
+  timestamp: z.string().nullable().optional(),
+  completed: z.boolean(),
+  current: z.boolean().optional(),
+});
+export type OrderTrackingTimelineEvent = z.infer<typeof OrderTrackingTimelineEventSchema>;
+
+export const OrderTrackingDetailsSchema = z.object({
+  id: z.string(),
+  trackingNumber: z.string(),
+  status: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string().optional(),
+  deliveredAt: z.string().nullable().optional(),
+  confirmedReceiptAt: z.string().nullable().optional(),
+  customerName: z.string(),
+  customerEmail: z.string().optional(),
+  shippingAddress: z.string(),
+  carrier: z.string().optional().default('Ethiopian Postal Service (EMS)'),
+  estimatedDelivery: z.string().nullable().optional(),
+  garmentTitle: z.string(),
+  items: z.array(z.any()).optional(),
+  quantity: z.number().default(1),
+  totalPriceEtb: z.number().default(0),
+  deliveryFee: z.number().default(0),
+  paymentMethod: z.string(),
+  paymentStatus: z.string(),
+  timeline: z.array(OrderTrackingTimelineEventSchema),
+});
+export type OrderTrackingDetails = z.infer<typeof OrderTrackingDetailsSchema>;
 
 // ============================================================================
 // 5. CUSTOMER SCHEMAS
@@ -802,6 +901,10 @@ export const CreatePurchaseOrderSchema = z.object({
   shippingCostEtb: z.number().nonnegative().optional(),
   notes: z.string().nullable().optional(),
   expectedDeliveryDate: z.string().nullable().optional(),
+  accountId: z.string().nullable().optional(),
+  grnNumber: z.string().nullable().optional(),
+  paymentStatus: z.string().nullable().optional(),
+  paidAt: z.string().nullable().optional(),
   items: z.array(PurchaseOrderItemSchema).min(1, 'At least one item is required'),
 });
 export type CreatePurchaseOrderInput = z.infer<typeof CreatePurchaseOrderSchema>;
@@ -849,6 +952,7 @@ export const CreateExpenseSchema = z.object({
   date: z.string().min(1, 'Date is required'),
   paymentMethod: z.string().optional().default('cash'),
   reference: z.string().nullable().optional(),
+  accountId: z.string().nullable().optional(),
 });
 export type CreateExpenseInput = z.infer<typeof CreateExpenseSchema>;
 
@@ -900,9 +1004,52 @@ export const ShipmentSchema = CreateShipmentSchema.extend({
 export type Shipment = z.infer<typeof ShipmentSchema>;
 
 // ============================================================================
-// 17. ERP: FINANCIAL REPORT SCHEMAS
+// 17. ERP: FINANCIAL REPORT & BANKING SCHEMAS
 // ============================================================================
+export const BankAccountType = z.enum(['bank', 'cash', 'telebirr', 'cbe_birr']);
+export type BankAccountType = z.infer<typeof BankAccountType>;
+
+export const CreateBankAccountSchema = z.object({
+  accountName: z.string().min(1, 'Account name is required'),
+  bankName: z.string().min(1, 'Bank name is required'),
+  accountNumber: z.string().min(1, 'Account number is required'),
+  accountType: BankAccountType.optional().default('bank'),
+  initialBalance: z.number().nonnegative().optional().default(0),
+  isDefault: z.boolean().optional().default(false),
+});
+export type CreateBankAccountInput = z.infer<typeof CreateBankAccountSchema>;
+
+export const BankAccountSchema = CreateBankAccountSchema.extend({
+  id: z.string(),
+  currentBalance: z.number(),
+  currency: z.string().default('ETB'),
+  status: z.enum(['active', 'inactive']).default('active'),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type BankAccount = z.infer<typeof BankAccountSchema>;
+
+export const FinancialTransactionSchema = z.object({
+  id: z.string(),
+  accountId: z.string(),
+  type: z.enum(['deposit', 'withdrawal', 'expense', 'sale_income', 'supplier_payment', 'transfer']),
+  amountEtb: z.number(),
+  balanceAfter: z.number(),
+  description: z.string(),
+  category: z.string(),
+  referenceId: z.string().nullable().optional(),
+  date: z.string(),
+  createdAt: z.string(),
+  accountName: z.string().optional(),
+  bankName: z.string().optional(),
+});
+export type FinancialTransaction = z.infer<typeof FinancialTransactionSchema>;
+
 export const FinanceSummarySchema = z.object({
+  totalLiquidity: z.number().optional(),
+  bankBalance: z.number().optional(),
+  cashBalance: z.number().optional(),
+  telebirrBalance: z.number().optional(),
   totalRevenue: z.number(),
   totalExpenses: z.number(),
   netProfit: z.number(),
@@ -933,3 +1080,4 @@ export const ProfitLossReportSchema = z.object({
   profitMargin: z.number(),
 });
 export type ProfitLossReport = z.infer<typeof ProfitLossReportSchema>;
+

@@ -5,6 +5,7 @@ import { useCart } from '../hooks/useCart';
 import { StorefrontLayout } from '../components/storefront/StorefrontLayout';
 import { ProductCard } from '../components/storefront/ProductCard';
 import { ArrowLeft, ShoppingBag, Truck, ShieldCheck, Check } from 'lucide-react';
+import { resolveImageUrl, FALLBACK_PRODUCT_IMAGE } from '@astu/shared';
 
 export const Route = createFileRoute('/product/$id')({
   component: ProductDetailComponent,
@@ -51,7 +52,8 @@ function ProductDetailComponent() {
 
   const sizes: string[] = (product.sizes || ['S', 'M', 'L', 'XL']).map((s: any) => typeof s === 'string' ? s : s?.label || 'Standard');
   const colors: string[] = (product.colors || ['Standard']).map((c: any) => typeof c === 'string' ? c : c?.name || 'Standard');
-  const images = product.images && product.images.length > 0 ? product.images : [(product as any).image].filter(Boolean);
+  const rawImages = product.images && product.images.length > 0 ? product.images : [(product as any).image].filter(Boolean);
+  const images = rawImages.map((img: string) => resolveImageUrl(img, 'full'));
   const price = product.priceEtb ?? (product as any).price ?? 0;
   const inStock = product.stockQuantity === undefined || product.stockQuantity > 0;
 
@@ -84,7 +86,15 @@ function ProductDetailComponent() {
           <div>
             <div className="aspect-square bg-slate-100 rounded-2xl overflow-hidden border border-slate-100 shadow-inner">
               {images.length > 0 ? (
-                <img src={images[0]} alt={product.title} className="w-full h-full object-cover" />
+                <img
+                  src={images[0]}
+                  alt={product.title}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = FALLBACK_PRODUCT_IMAGE;
+                  }}
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-slate-400">No Image Available</div>
               )}
@@ -93,7 +103,15 @@ function ProductDetailComponent() {
               <div className="grid grid-cols-4 gap-3 mt-3">
                 {images.slice(0, 4).map((img: string, i: number) => (
                   <div key={i} className="aspect-square bg-slate-100 rounded-xl overflow-hidden border border-slate-200">
-                    <img src={img} alt="" className="w-full h-full object-cover" />
+                    <img
+                      src={img}
+                      alt=""
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = FALLBACK_PRODUCT_IMAGE;
+                      }}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                 ))}
               </div>

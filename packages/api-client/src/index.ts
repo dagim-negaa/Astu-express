@@ -43,6 +43,12 @@ import type {
   InitializeChapaPaymentInput,
   VerifyChapaPaymentInput,
   ChapaPaymentResult,
+  BankAccount,
+  CreateBankAccountInput,
+  FinancialTransaction,
+  BankAccountType,
+  OrderTrackingDetails,
+  OrderTrackingTimelineEvent,
 } from '@astu/shared';
 import {
   GARMENT_CATEGORIES,
@@ -81,6 +87,10 @@ import {
   ChapaPaymentResultSchema,
   normalizeEthiopianPhone,
   EthiopianPhoneRegex,
+  BankAccountType as BankAccountTypeSchema,
+  CreateBankAccountSchema,
+  BankAccountSchema,
+  FinancialTransactionSchema,
 } from '@astu/shared';
 
 export type {
@@ -95,6 +105,8 @@ export type {
   OrderItem,
   OrderStatus,
   UpdateOrderStatusInput,
+  OrderTrackingDetails,
+  OrderTrackingTimelineEvent,
   CanonicalOrderStatus,
   GarmentCategory,
   CustomMeasurements,
@@ -128,6 +140,10 @@ export type {
   InitializeChapaPaymentInput,
   VerifyChapaPaymentInput,
   ChapaPaymentResult,
+  BankAccount,
+  CreateBankAccountInput,
+  FinancialTransaction,
+  BankAccountType,
 };
 
 export {
@@ -167,6 +183,10 @@ export {
   ChapaPaymentResultSchema,
   normalizeEthiopianPhone,
   EthiopianPhoneRegex,
+  BankAccountTypeSchema,
+  CreateBankAccountSchema,
+  BankAccountSchema,
+  FinancialTransactionSchema,
 };
 
 // ============================================================================
@@ -254,7 +274,27 @@ export class AstuApiClient {
 
   constructor(config: ApiClientConfig) {
     this.baseUrl = config.baseUrl.replace(/\/$/, '');
-    this.storage = config.storage;
+    this.storage =
+      config.storage ||
+      (typeof window !== 'undefined'
+        ? {
+            getToken: () =>
+              localStorage.getItem('astu_auth_token') || localStorage.getItem('astu_admin_auth_token'),
+            setToken: (token: string | null) => {
+              if (token) {
+                localStorage.setItem('astu_auth_token', token);
+                localStorage.setItem('astu_admin_auth_token', token);
+              } else {
+                localStorage.removeItem('astu_auth_token');
+                localStorage.removeItem('astu_admin_auth_token');
+              }
+            },
+            clearToken: () => {
+              localStorage.removeItem('astu_auth_token');
+              localStorage.removeItem('astu_admin_auth_token');
+            },
+          }
+        : undefined);
     this.getTokenFn = config.getToken;
     this.defaultHeaders = config.headers || {};
     this.timeoutMs = config.timeoutMs || 10000;
@@ -352,10 +392,16 @@ export class AstuApiClient {
         };
       }
 
+      // Auto-unwrap backend { success: true, data: T } structure so res.data is directly the expected payload
+      let payloadData: any = json;
+      if (json && typeof json === 'object' && 'data' in json && ('success' in json || 'statusCode' in json)) {
+        payloadData = json.data;
+      }
+
       return {
         success: true,
         statusCode: response.status,
-        data: json as T,
+        data: payloadData as T,
       };
     } catch (err: unknown) {
       if (timeoutId) clearTimeout(timeoutId);
@@ -386,10 +432,17 @@ export class AstuApiClient {
         ? emailOrData
         : { email: emailOrData, password: passwordArg || '' };
 
-    const res = await this.request<ApiAuthResponse>('/api/auth/sign-in', {
+    let res = await this.request<ApiAuthResponse>('/api/auth/sign-in', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+
+    if (!res.success && res.statusCode === 404) {
+      res = await this.request<ApiAuthResponse>('/api/auth/sign-in/email', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    }
 
     if (res.success && res.data) {
       const token = res.data.token || res.data.session?.token;
@@ -404,10 +457,17 @@ export class AstuApiClient {
   async signUp(
     data: RegisterInput | { name: string; email: string; password: string; phone?: string; role?: string }
   ): Promise<ApiResponse<ApiAuthResponse>> {
-    const res = await this.request<ApiAuthResponse>('/api/auth/sign-up', {
+    let res = await this.request<ApiAuthResponse>('/api/auth/sign-up', {
       method: 'POST',
       body: JSON.stringify(data),
     });
+
+    if (!res.success && res.statusCode === 404) {
+      res = await this.request<ApiAuthResponse>('/api/auth/sign-up/email', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    }
 
     if (res.success && res.data) {
       const token = res.data.token || res.data.session?.token;
@@ -588,11 +648,22 @@ export class AstuApiClient {
   // ==========================================================================
   // Orders & Fulfillment Pipeline
   // ==========================================================================
-  async listOrders(params?: { email?: string; storeId?: string }): Promise<ApiResponse<Order[]>> {
+  async listOrders(params?: {
+    email?: string;
+    storeId?: string;
+    status?: string;
+    trackingNumber?: string;
+    query?: string;
+    q?: string;
+  }): Promise<ApiResponse<Order[]>> {
     let endpoint = '/api/orders';
     const query = new URLSearchParams();
     if (params?.email) query.set('email', params.email);
     if (params?.storeId) query.set('storeId', params.storeId);
+    if (params?.status) query.set('status', params.status);
+    if (params?.trackingNumber) query.set('trackingNumber', params.trackingNumber);
+    if (params?.query) query.set('query', params.query);
+    if (params?.q) query.set('q', params.q);
     const qs = query.toString();
     if (qs) endpoint += `?${qs}`;
     return this.request<Order[]>(endpoint);
@@ -600,6 +671,10 @@ export class AstuApiClient {
 
   async getOrder(id: string): Promise<ApiResponse<Order>> {
     return this.request<Order>(`/api/orders/${encodeURIComponent(id)}`);
+  }
+
+  async trackOrder(trackingNumberOrId: string): Promise<ApiResponse<OrderTrackingDetails>> {
+    return this.request<OrderTrackingDetails>(`/api/orders/track/${encodeURIComponent(trackingNumberOrId.trim())}`);
   }
 
   async createOrder(input: CreateOrderInput | any): Promise<ApiResponse<Order>> {
@@ -977,8 +1052,52 @@ export class AstuApiClient {
     return this.request(`/api/purchases/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
   }
 
-  async receivePurchase(id: string): Promise<ApiResponse<any>> {
-    return this.request(`/api/purchases/${id}/receive`, { method: 'POST' });
+  async receivePurchase(id: string, data?: { accountId?: string; warehouseId?: string; payNow?: boolean }): Promise<ApiResponse<any>> {
+    return this.request(`/api/purchases/${id}/receive`, {
+      method: 'POST',
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
+
+  // ============================================================================
+  // ERP: WAREHOUSES & INVENTORY
+  // ============================================================================
+  async listWarehouses(): Promise<ApiResponse<any[]>> {
+    return this.request('/api/warehouses');
+  }
+
+  async getWarehouse(id: string): Promise<ApiResponse<any>> {
+    return this.request(`/api/warehouses/${id}`);
+  }
+
+  async createWarehouse(data: any): Promise<ApiResponse<any>> {
+    return this.request('/api/warehouses', { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async listWarehouseItems(params?: {
+    warehouseId?: string;
+    category?: string;
+    availableOnly?: boolean;
+    search?: string;
+  }): Promise<ApiResponse<any[]>> {
+    const query = new URLSearchParams();
+    if (params?.warehouseId) query.set('warehouseId', params.warehouseId);
+    if (params?.category) query.set('category', params.category);
+    if (params?.availableOnly !== undefined) query.set('availableOnly', String(params.availableOnly));
+    if (params?.search) query.set('search', params.search);
+    const qs = query.toString();
+    return this.request(`/api/warehouses/items${qs ? `?${qs}` : ''}`);
+  }
+
+  async getWarehouseItem(id: string): Promise<ApiResponse<any>> {
+    return this.request(`/api/warehouses/items/${id}`);
+  }
+
+  async transferWarehouseItemToProduction(data: any): Promise<ApiResponse<any>> {
+    return this.request('/api/warehouses/transfer', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
   // ============================================================================
@@ -1025,7 +1144,7 @@ export class AstuApiClient {
   }
 
   // ============================================================================
-  // ERP: FINANCE
+  // ERP: FINANCE & BANKING
   // ============================================================================
   async getFinanceDashboard(): Promise<ApiResponse<any>> {
     return this.request('/api/finance/dashboard');
@@ -1037,6 +1156,44 @@ export class AstuApiClient {
     if (endDate) query.set('endDate', endDate);
     const qs = query.toString();
     return this.request(`/api/finance/profit-loss${qs ? `?${qs}` : ''}`);
+  }
+
+  async listBankAccounts(): Promise<ApiResponse<BankAccount[]>> {
+    return this.request('/api/finance/accounts');
+  }
+
+  async createBankAccount(data: CreateBankAccountInput): Promise<ApiResponse<BankAccount>> {
+    return this.request('/api/finance/accounts', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async depositToAccount(
+    accountId: string,
+    data: { amountEtb: number; description: string; category?: string; date?: string }
+  ): Promise<ApiResponse<FinancialTransaction>> {
+    return this.request(`/api/finance/accounts/${encodeURIComponent(accountId)}/deposit`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async transferFunds(data: {
+    fromAccountId: string;
+    toAccountId: string;
+    amountEtb: number;
+    description?: string;
+    date?: string;
+  }): Promise<ApiResponse<{ fromAccount: BankAccount; toAccount: BankAccount }>> {
+    return this.request('/api/finance/transfer', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getFinancialTransactions(limit = 100): Promise<ApiResponse<FinancialTransaction[]>> {
+    return this.request(`/api/finance/transactions?limit=${limit}`);
   }
 }
 

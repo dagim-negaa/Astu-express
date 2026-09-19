@@ -208,7 +208,7 @@ export const ProductImageUploader: React.FC<ProductImageUploaderProps> = ({
                       color: hasFront ? '#166534' : '#b91c1c',
                     }}
                   >
-                    {hasFront ? '✓ Front ready' : '⚠️ Front required'}
+                    {hasFront ? 'Front ready' : 'Front required'}
                   </span>
                 </div>
 

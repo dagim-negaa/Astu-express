@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router';
+import { resolveImageUrl, FALLBACK_PRODUCT_IMAGE } from '@astu/shared';
 
 interface ProductCardProps {
   product: {
@@ -17,7 +18,8 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const title = product.title || product.name || 'Untitled Product';
   const price = product.priceEtb ?? product.price ?? 0;
-  const image = (product.images && product.images[0]) || product.image;
+  const rawImage = (product.images && product.images[0]) || product.image;
+  const image = resolveImageUrl(rawImage, 'preview');
 
   return (
     <Link to="/product/$id" params={{ id: product.id }} className="block group">
@@ -27,6 +29,10 @@ export function ProductCard({ product }: ProductCardProps) {
             <img
               src={image}
               alt={title}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = FALLBACK_PRODUCT_IMAGE;
+              }}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (

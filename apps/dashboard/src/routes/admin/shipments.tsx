@@ -16,26 +16,29 @@ function ShipmentsComponent() {
   const [statusFilter, setStatusFilter] = useState('');
   const [form, setForm] = useState({ orderId: '', carrier: 'local_courier', shippingAddress: '', shippingCostEtb: 0, estimatedDelivery: '', notes: '' });
 
-  const { data: shipments = [], isLoading } = useQuery({
+  const { data: rawShipments = [], isLoading } = useQuery({
     queryKey: ['shipments'],
     queryFn: async () => {
       const result = await apiClient.listShipments();
-      return result.data || [];
+      return Array.isArray(result.data) ? result.data : (result.data as any)?.data || [];
     },
   });
+  const shipments = Array.isArray(rawShipments) ? rawShipments : [];
 
-  const { data: orders = [] } = useQuery({
+  const { data: rawOrders = [] } = useQuery({
     queryKey: ['orders'],
     queryFn: async () => {
       const result = await apiClient.listOrders();
-      return result.data || [];
+      return Array.isArray(result.data) ? result.data : (result.data as any)?.data || [];
     },
   });
+  const orders = Array.isArray(rawOrders) ? rawOrders : [];
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => apiClient.createShipment(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
       setIsAddModalOpen(false);
       setForm({ orderId: '', carrier: 'local_courier', shippingAddress: '', shippingCostEtb: 0, estimatedDelivery: '', notes: '' });
     },
@@ -45,6 +48,10 @@ function ShipmentsComponent() {
     mutationFn: async ({ id, data }: { id: string; data: any }) => apiClient.updateShipment(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['bankAccounts'] });
+      queryClient.invalidateQueries({ queryKey: ['financeDashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['financialTransactions'] });
     },
   });
 

@@ -1,7 +1,7 @@
 {
-  "name": "r2-express",
-  "version": "3.0.0",
-  "description": "R2 Express - Ethiopian Shipping Center & Web-Based Mini ERP System for Inventory, Sales and Financial Operations",
+  "name": "astu-express",
+  "version": "1.0.0",
+  "description": "ASTU Express - Ethiopian Shipping Center & Web-Based Mini ERP System for Inventory, Sales and Financial Operations",
   "main": "index.js",
   "scripts": {
     "build": "pnpm --recursive run build",

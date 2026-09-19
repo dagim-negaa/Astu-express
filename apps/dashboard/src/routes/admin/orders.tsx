@@ -26,6 +26,7 @@ import {
   Check,
 } from 'lucide-react';
 import type { OrderStatus } from '@astu/shared';
+import { resolveImageUrl, FALLBACK_PRODUCT_IMAGE } from '@astu/shared';
 
 export const Route = createFileRoute('/admin/orders')({
   component: OrdersComponent,
@@ -178,7 +179,7 @@ function OrdersComponent() {
             Orders
           </h1>
           <p style={{ margin: '0.2rem 0 0', fontSize: '0.8125rem', color: '#64748b' }}>
-            R2 Express — Track client commissions, payment statuses, and physical courier dispatch.
+            ASTU Express — Track client commissions, payment statuses, and physical courier dispatch.
           </p>
         </div>
 
@@ -262,8 +263,8 @@ function OrdersComponent() {
               }}
             >
               <option value="all">All Channels</option>
-              <option value="app">📱 App Orders</option>
-              <option value="phone">📞 Phone Orders</option>
+              <option value="app">App Orders</option>
+              <option value="phone">Phone Orders</option>
             </select>
           </div>
 
@@ -597,7 +598,7 @@ function OrdersComponent() {
                     textTransform: 'uppercase',
                   }}
                 >
-                  {selectedOrder.paymentStatus === 'paid' ? 'Paid ✓' : 'Pending ⏳'}
+                  {selectedOrder.paymentStatus === 'paid' ? 'Paid' : 'Pending'}
                 </span>
               </div>
 
@@ -651,7 +652,7 @@ function OrdersComponent() {
                       boxShadow: '0 1px 3px rgba(21, 128, 61, 0.25)',
                     }}
                   >
-                    <Check size={14} /> Mark Payment Received (Paid ✓)
+                    <Check size={14} /> Mark Payment Received
                   </button>
                 </div>
               )}
@@ -677,7 +678,7 @@ function OrdersComponent() {
                       cursor: 'pointer',
                     }}
                   >
-                    <Check size={14} /> Confirm Digital Transfer (Paid ✓)
+                    <Check size={14} /> Confirm Digital Transfer
                   </button>
                 </div>
               )}
@@ -720,11 +721,11 @@ function OrdersComponent() {
                         flexShrink: 0,
                       }}
                     >
-                      {selectedOrder.paymentStatus === 'paid' ? '✓' : '⏳'}
+                      {selectedOrder.paymentStatus === 'paid' ? '2' : '2'}
                     </div>
                     <div>
                       <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#211a13' }}>
-                        Step 2: Pay upon Handover {selectedOrder.paymentStatus === 'paid' ? '(Collected ✓)' : '(Pending ⏳)'}
+                        Step 2: Pay upon Handover {selectedOrder.paymentStatus === 'paid' ? '(Collected)' : '(Pending)'}
                       </div>
                       <div style={{ fontSize: '0.71875rem', color: '#665c52' }}>
                         Customer pays in cash or card to courier upon physical arrival.
@@ -749,11 +750,11 @@ function OrdersComponent() {
                         flexShrink: 0,
                       }}
                     >
-                      {selectedOrder.status === 'delivered' ? '✓' : '3'}
+                      3
                     </div>
                     <div>
                       <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#211a13' }}>
-                        Step 3: Delivered {selectedOrder.status === 'delivered' ? '(Completed ✓)' : ''}
+                        Step 3: Delivered {selectedOrder.status === 'delivered' ? '(Completed)' : ''}
                       </div>
                       <div style={{ fontSize: '0.71875rem', color: '#665c52' }}>
                         Delivered into client hands and sealed in mobile tracking.
@@ -767,7 +768,7 @@ function OrdersComponent() {
                   {/* Step 1: Order Confirmed */}
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem' }}>
                     <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: '#15803d', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800, flexShrink: 0 }}>
-                      ✓
+                      1
                     </div>
                     <div>
                       <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#211a13' }}>Step 1: Order Confirmed</div>
@@ -792,11 +793,11 @@ function OrdersComponent() {
                         flexShrink: 0,
                       }}
                     >
-                      {selectedOrder.paymentStatus === 'paid' ? '✓' : '⏳'}
+                      2
                     </div>
                     <div>
                       <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#211a13' }}>
-                        Step 2: Digital Payment {selectedOrder.paymentStatus === 'paid' ? 'Confirmed ✓' : 'Pending ⏳'}
+                        Step 2: Digital Payment {selectedOrder.paymentStatus === 'paid' ? '(Confirmed)' : '(Pending)'}
                       </div>
                       <div style={{ fontSize: '0.71875rem', color: '#665c52' }}>
                         Settled digitally via Telebirr, CBE, or Chapa gateway.
@@ -821,11 +822,11 @@ function OrdersComponent() {
                         flexShrink: 0,
                       }}
                     >
-                      {selectedOrder.status === 'delivered' ? '✓' : '3'}
+                      3
                     </div>
                     <div>
                       <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0f172a' }}>
-                        Step 3: Delivered {selectedOrder.status === 'delivered' ? '(Completed ✓)' : ''}
+                        Step 3: Delivered {selectedOrder.status === 'delivered' ? '(Completed)' : ''}
                       </div>
                       <div style={{ fontSize: '0.71875rem', color: '#64748b' }}>
                         Courier delivery confirmed into customer hands.
@@ -903,7 +904,15 @@ function OrdersComponent() {
                       }}
                     >
                       {it.image ? (
-                        <img src={it.image} alt={it.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img
+                          src={resolveImageUrl(it.image, 'thumb')}
+                          alt={it.title}
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = FALLBACK_PRODUCT_IMAGE;
+                          }}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
                       ) : (
                         <Package size={20} color="#64748b" />
                       )}

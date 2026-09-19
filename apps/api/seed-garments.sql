@@ -1,0 +1,50 @@
+INSERT INTO garments (id, sku, title, category, storeId, priceEtb, buyingPriceEtb, profitMargin, stockQuantity, initialStock, status, color, size, colors, sizes, materials, images, description, is_featured, createdAt, updatedAt)
+VALUES
+('garm-kemis-01', 'ETH-KEMIS-001', 'Traditional Habesha Kemis (Royal Gold Tilet)', 'traditional', 'store-1', 4800, 2800, 2000, 18, 25, 'completed', 'Ivory White', 'M',
+ '[{"name":"Ivory White","hex":"#faf9f6","images":{"front":"/api/assets/products/kemis-trad-01/preview.webp"}},{"name":"Gold Accent","hex":"#d4af37","images":{"front":"/api/assets/products/kemis-trad-01/preview.webp"}}]',
+ '[{"label":"S","available":true},{"label":"M","available":true},{"label":"L","available":true},{"label":"XL","available":true}]',
+ '["Handspun Ethiopian Cotton","Gold Silk Tilet Embroidery"]',
+ '["/api/assets/products/kemis-trad-01/preview.webp","/api/assets/products/kemis-trad-01/thumb.webp"]',
+ 'Mastercrafted traditional Ethiopian Habesha Kemis tailored from 100% organic Shemma cotton with hand-embroidered royal gold Tilet trimming. Ideal for weddings, Enkutatash, and formal cultural ceremonies.',
+ 1, datetime('now'), datetime('now')),
+
+('garm-kidan-02', 'ETH-KIDAN-002', 'Men''s Handwoven Shemma Tunic & Trousers', 'traditional', 'store-1', 3600, 2100, 1500, 14, 20, 'completed', 'Pure White', 'L',
+ '[{"name":"Pure White","hex":"#ffffff","images":{"front":"/api/assets/products/kidan-men-01/preview.webp"}}]',
+ '[{"label":"M","available":true},{"label":"L","available":true},{"label":"XL","available":true}]',
+ '["100% Handwoven Shemma Cotton","Tibeb Neck Embroidery"]',
+ '["/api/assets/products/kidan-men-01/preview.webp"]',
+ 'Classic Ethiopian gentleman''s ceremonial tunic with intricately embroidered neckline and matching tailored trousers.',
+ 1, datetime('now'), datetime('now')),
+
+('garm-jacket-03', 'ETH-JACKET-003', 'Modern Ethiopian Shemma Bomber Jacket', 'outerwear', 'store-1', 5400, 3200, 2200, 22, 30, 'completed', 'Oatmeal Beige', 'L',
+ '[{"name":"Oatmeal Beige","hex":"#d8c4b6","images":{"front":"/api/assets/products/shemma-jacket-01/preview.webp"}}]',
+ '[{"label":"S","available":true},{"label":"M","available":true},{"label":"L","available":true}]',
+ '["Heavyweight Ethiopian Cotton","Brass Hardware","Silk Lining"]',
+ '["/api/assets/products/shemma-jacket-01/preview.webp"]',
+ 'Contemporary urban outerwear handcrafted by artisans in Addis Ababa. Combines authentic textured Shemma weave with modern streetwear silhouette.',
+ 1, datetime('now'), datetime('now')),
+
+('garm-netela-04', 'ETH-NETELA-004', 'Fine Handspun Cotton Netela Scarf', 'accessories', 'store-1', 1800, 950, 850, 35, 50, 'completed', 'White / Multicolored Border', 'Standard',
+ '[{"name":"White / Multi","hex":"#f5f5f5","images":{"front":"/api/assets/products/netela-scarf-01/preview.webp"}}]',
+ '[{"label":"Standard (2.2m x 1.1m)","available":true}]',
+ '["Featherlight Ethiopian Ginned Cotton","Tibeb Fringe"]',
+ '["/api/assets/products/netela-scarf-01/preview.webp"]',
+ 'Delicate double-layered cotton Netela with geometric Ethiopian border accents. Soft, breathable, and gracefully draped.',
+ 0, datetime('now'), datetime('now')),
+
+('garm-shoes-05', 'ETH-SHOES-005', 'Highland Handcrafted Leather Oxford Shoes', 'footwear', 'store-1', 4200, 2600, 1600, 12, 15, 'completed', 'Cognac Brown', '42',
+ '[{"name":"Cognac Brown","hex":"#7a3e1d","images":{"front":"/api/assets/products/leather-oxford-01/preview.webp"}},{"name":"Black","hex":"#1a1a1a","images":{"front":"/api/assets/products/leather-oxford-01/preview.webp"}}]',
+ '[{"label":"40","available":true},{"label":"41","available":true},{"label":"42","available":true},{"label":"43","available":true},{"label":"44","available":true}]',
+ '["100% Ethiopian Calfskin Leather","Goodyear Welt Rubber Sole"]',
+ '["/api/assets/products/leather-oxford-01/preview.webp"]',
+ 'Artisan-cobbled formal Oxford shoes produced in Merkato''s heritage leather district using premium Ethiopian Highland leather.',
+ 0, datetime('now'), datetime('now')),
+
+('garm-dress-06', 'ETH-RTW-006', 'Modern Addis Silhouette Evening Dress', 'rtw', 'store-1', 6200, 3800, 2400, 10, 15, 'completed', 'Emerald Green', 'S',
+ '[{"name":"Emerald Green","hex":"#0b6623","images":{"front":"/api/assets/products/habesha-evening-01/preview.webp"}},{"name":"Obsidian Black","hex":"#1c1c1c","images":{"front":"/api/assets/products/habesha-evening-01/preview.webp"}}]',
+ '[{"label":"XS","available":true},{"label":"S","available":true},{"label":"M","available":true},{"label":"L","available":true}]',
+ '["Ethiopian Organic Cotton Crepe","Tibeb Gold Threading"]',
+ '["/api/assets/products/habesha-evening-01/preview.webp"]',
+ 'Stunning fusion ready-to-wear evening gown capturing contemporary African couture aesthetics with heritage Ethiopian embroidery.',
+ 1, datetime('now'), datetime('now'))
+ON CONFLICT (id) DO NOTHING;

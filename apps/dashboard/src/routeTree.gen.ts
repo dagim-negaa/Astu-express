@@ -20,6 +20,7 @@ import { Route as ShopRouteImport } from './routes/shop'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminCustomersRouteImport } from './routes/admin/customers'
 import { Route as AdminExpensesRouteImport } from './routes/admin/expenses'
+import { Route as AdminFinanceRouteImport } from './routes/admin/finance'
 import { Route as AdminInventoryRouteImport } from './routes/admin/inventory'
 import { Route as AdminOrdersRouteImport } from './routes/admin/orders'
 import { Route as AdminProductsRouteImport } from './routes/admin/products'
@@ -29,6 +30,7 @@ import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminShipmentsRouteImport } from './routes/admin/shipments'
 import { Route as AdminStaffRouteImport } from './routes/admin/staff'
 import { Route as AdminSuppliersRouteImport } from './routes/admin/suppliers'
+import { Route as AdminWarehouseRouteImport } from './routes/admin/warehouse'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as AdminProductsNewRouteImport } from './routes/admin/products_.new'
 
@@ -87,6 +89,11 @@ const AdminExpensesRoute = AdminExpensesRouteImport.update({
   path: '/expenses',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminFinanceRoute = AdminFinanceRouteImport.update({
+  id: '/finance',
+  path: '/finance',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminInventoryRoute = AdminInventoryRouteImport.update({
   id: '/inventory',
   path: '/inventory',
@@ -132,6 +139,11 @@ const AdminSuppliersRoute = AdminSuppliersRouteImport.update({
   path: '/suppliers',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminWarehouseRoute = AdminWarehouseRouteImport.update({
+  id: '/warehouse',
+  path: '/warehouse',
+  getParentRoute: () => AdminRoute,
+} as any)
 const ProductIdRoute = ProductIdRouteImport.update({
   id: '/product/$id',
   path: '/product/$id',
@@ -154,6 +166,7 @@ export interface FileRoutesByFullPath {
   '/shop': typeof ShopRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/expenses': typeof AdminExpensesRoute
+  '/admin/finance': typeof AdminFinanceRoute
   '/admin/inventory': typeof AdminInventoryRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/products': typeof AdminProductsRoute
@@ -163,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/admin/shipments': typeof AdminShipmentsRoute
   '/admin/staff': typeof AdminStaffRoute
   '/admin/suppliers': typeof AdminSuppliersRoute
+  '/admin/warehouse': typeof AdminWarehouseRoute
   '/product/$id': typeof ProductIdRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/products/new': typeof AdminProductsNewRoute
@@ -177,6 +191,7 @@ export interface FileRoutesByTo {
   '/shop': typeof ShopRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/expenses': typeof AdminExpensesRoute
+  '/admin/finance': typeof AdminFinanceRoute
   '/admin/inventory': typeof AdminInventoryRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/products': typeof AdminProductsRoute
@@ -186,6 +201,7 @@ export interface FileRoutesByTo {
   '/admin/shipments': typeof AdminShipmentsRoute
   '/admin/staff': typeof AdminStaffRoute
   '/admin/suppliers': typeof AdminSuppliersRoute
+  '/admin/warehouse': typeof AdminWarehouseRoute
   '/product/$id': typeof ProductIdRoute
   '/admin': typeof AdminIndexRoute
   '/admin/products/new': typeof AdminProductsNewRoute
@@ -202,6 +218,7 @@ export interface FileRoutesById {
   '/shop': typeof ShopRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/expenses': typeof AdminExpensesRoute
+  '/admin/finance': typeof AdminFinanceRoute
   '/admin/inventory': typeof AdminInventoryRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/products': typeof AdminProductsRoute
@@ -211,6 +228,7 @@ export interface FileRoutesById {
   '/admin/shipments': typeof AdminShipmentsRoute
   '/admin/staff': typeof AdminStaffRoute
   '/admin/suppliers': typeof AdminSuppliersRoute
+  '/admin/warehouse': typeof AdminWarehouseRoute
   '/product/$id': typeof ProductIdRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/products_/new': typeof AdminProductsNewRoute
@@ -228,6 +246,7 @@ export interface FileRouteTypes {
     | '/shop'
     | '/admin/customers'
     | '/admin/expenses'
+    | '/admin/finance'
     | '/admin/inventory'
     | '/admin/orders'
     | '/admin/products'
@@ -237,6 +256,7 @@ export interface FileRouteTypes {
     | '/admin/shipments'
     | '/admin/staff'
     | '/admin/suppliers'
+    | '/admin/warehouse'
     | '/product/$id'
     | '/admin/'
     | '/admin/products/new'
@@ -251,6 +271,7 @@ export interface FileRouteTypes {
     | '/shop'
     | '/admin/customers'
     | '/admin/expenses'
+    | '/admin/finance'
     | '/admin/inventory'
     | '/admin/orders'
     | '/admin/products'
@@ -260,6 +281,7 @@ export interface FileRouteTypes {
     | '/admin/shipments'
     | '/admin/staff'
     | '/admin/suppliers'
+    | '/admin/warehouse'
     | '/product/$id'
     | '/admin'
     | '/admin/products/new'
@@ -275,6 +297,7 @@ export interface FileRouteTypes {
     | '/shop'
     | '/admin/customers'
     | '/admin/expenses'
+    | '/admin/finance'
     | '/admin/inventory'
     | '/admin/orders'
     | '/admin/products'
@@ -284,6 +307,7 @@ export interface FileRouteTypes {
     | '/admin/shipments'
     | '/admin/staff'
     | '/admin/suppliers'
+    | '/admin/warehouse'
     | '/product/$id'
     | '/admin/'
     | '/admin/products_/new'
@@ -380,6 +404,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminExpensesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/finance': {
+      id: '/admin/finance'
+      path: '/finance'
+      fullPath: '/admin/finance'
+      preLoaderRoute: typeof AdminFinanceRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/inventory': {
       id: '/admin/inventory'
       path: '/inventory'
@@ -443,6 +474,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSuppliersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/warehouse': {
+      id: '/admin/warehouse'
+      path: '/warehouse'
+      fullPath: '/admin/warehouse'
+      preLoaderRoute: typeof AdminWarehouseRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/product/$id': {
       id: '/product/$id'
       path: '/product/$id'
@@ -463,6 +501,7 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminExpensesRoute: typeof AdminExpensesRoute
+  AdminFinanceRoute: typeof AdminFinanceRoute
   AdminInventoryRoute: typeof AdminInventoryRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
   AdminProductsRoute: typeof AdminProductsRoute
@@ -472,6 +511,7 @@ interface AdminRouteChildren {
   AdminShipmentsRoute: typeof AdminShipmentsRoute
   AdminStaffRoute: typeof AdminStaffRoute
   AdminSuppliersRoute: typeof AdminSuppliersRoute
+  AdminWarehouseRoute: typeof AdminWarehouseRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminProductsNewRoute: typeof AdminProductsNewRoute
 }
@@ -479,6 +519,7 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminCustomersRoute: AdminCustomersRoute,
   AdminExpensesRoute: AdminExpensesRoute,
+  AdminFinanceRoute: AdminFinanceRoute,
   AdminInventoryRoute: AdminInventoryRoute,
   AdminOrdersRoute: AdminOrdersRoute,
   AdminProductsRoute: AdminProductsRoute,
@@ -488,6 +529,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminShipmentsRoute: AdminShipmentsRoute,
   AdminStaffRoute: AdminStaffRoute,
   AdminSuppliersRoute: AdminSuppliersRoute,
+  AdminWarehouseRoute: AdminWarehouseRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminProductsNewRoute: AdminProductsNewRoute,
 }

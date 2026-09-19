@@ -15,6 +15,7 @@ import { purchasesRouter } from "./routes/purchases.routes";
 import { expensesRouter } from "./routes/expenses.routes";
 import { shipmentsRouter } from "./routes/shipments.routes";
 import { financeRouter } from "./routes/finance.routes";
+import { warehouseRouter } from "./routes/warehouse.routes";
 
 export type Bindings = {
   astu_express_db?: D1Database;
@@ -59,7 +60,6 @@ const ALLOWED_ORIGINS = [
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:3000",
-  "http://localhost:8081",
   "http://localhost:8787",
   "http://127.0.0.1:5173",
   "http://127.0.0.1:8787",
@@ -67,7 +67,7 @@ const ALLOWED_ORIGINS = [
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
-// 1. Enable Global CORS for Dashboard, Storefront & External Clients
+// 1. Enable Global CORS for Dashboard, Storefront & Web Clients
 app.use(
   "*",
   cors({
@@ -77,9 +77,6 @@ app.use(
         ALLOWED_ORIGINS.includes(origin) ||
         origin.endsWith(".workers.dev") ||
         origin.endsWith(".pages.dev") ||
-        origin.startsWith("astuexpress://") ||
-        origin.startsWith("exp://") ||
-        origin.startsWith("myapp://") ||
         origin.includes("localhost") ||
         origin.includes("127.0.0.1") ||
         origin.startsWith("http://192.168.") ||
@@ -115,15 +112,7 @@ app.use("*", async (c, next) => {
   return next();
 });
 
-// 3. Mount Native Better Auth Web Standard Handler
-app.all("/api/auth/*", async (c) => {
-  const db = getDb(c.env);
-  const baseURL = c.env.API_BASE_URL || new URL(c.req.url).origin;
-  const auth = createAuth(db, c.env.BETTER_AUTH_SECRET, baseURL);
-  return auth.handler(c.req.raw);
-});
-
-// 4. Root Welcome & Health Check
+// 3. Root Welcome & Health Check
 app.get("/", (c) => {
   return c.json({
     status: "online",
@@ -156,7 +145,9 @@ app.get("/api/health", (c) => {
   });
 });
 
-// 5. Mount Modular Domain Sub-Routers
+// 4. Mount Modular Domain Sub-Routers
+// (Mounted before Better Auth wildcard so custom endpoints like /api/auth/sign-up, /api/auth/sign-in, /api/me are handled directly)
+app.route("/api", identityRouter);
 app.route("/api/garments", catalogRouter);
 app.route("/api/products", catalogRouter);
 app.route("/api/orders", ordersRouter);
@@ -165,13 +156,39 @@ app.route("/api/stores", storesRouter);
 app.route("/api/payments", paymentsRouter);
 app.route("/api/upload", uploadRouter);
 app.route("/api/assets", assetsRouter);
+app.route("/api/storage", assetsRouter);
+app.route("/api/r2", assetsRouter);
 app.route("/api/suppliers", suppliersRouter);
 app.route("/api/purchases", purchasesRouter);
 app.route("/api/expenses", expensesRouter);
 app.route("/api/shipments", shipmentsRouter);
 app.route("/api/finance", financeRouter);
-app.route("/api", identityRouter);
+app.route("/api/warehouses", warehouseRouter);
+app.route("/api/warehouse", warehouseRouter);
 app.route("/", publicRouter);
+
+// 5. Mount Native Better Auth Web Standard Handler
+// (Handles /api/auth/sign-in/email, /api/auth/sign-up/email, /api/auth/get-session, /api/auth/admin/*, etc.)
+app.all("/api/auth/*", async (c) => {
+  const db = getDb(c.env);
+  const baseURL = c.env.API_BASE_URL || new URL(c.req.url).origin;
+  const auth = createAuth(db, c.env.BETTER_AUTH_SECRET, baseURL);
+
+  // Fallback rewrites for any clients hitting /api/auth/sign-up or /api/auth/sign-in
+  const url = new URL(c.req.url);
+  if (url.pathname === "/api/auth/sign-up" && c.req.method === "POST") {
+    url.pathname = "/api/auth/sign-up/email";
+    const reqCopy = new Request(url.toString(), c.req.raw);
+    return auth.handler(reqCopy);
+  }
+  if (url.pathname === "/api/auth/sign-in" && c.req.method === "POST") {
+    url.pathname = "/api/auth/sign-in/email";
+    const reqCopy = new Request(url.toString(), c.req.raw);
+    return auth.handler(reqCopy);
+  }
+
+  return auth.handler(c.req.raw);
+});
 
 // 6. Global Error Handling
 app.onError((err, c) => {

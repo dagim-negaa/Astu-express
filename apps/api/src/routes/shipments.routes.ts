@@ -1,18 +1,16 @@
 import { Hono } from 'hono';
-import { requireAuth, requireRole, resolveD1, type Env } from '../middleware/auth';
+import { optionalAuth, requireRole, resolveD1, type Env } from '../middleware/auth';
 import { ShipmentService } from '../modules/shipments/shipments.service';
 
 export const shipmentsRouter = new Hono<Env>();
 
-shipmentsRouter.use('*', requireAuth);
-
-shipmentsRouter.get('/', async (c) => {
+shipmentsRouter.get('/', optionalAuth, async (c) => {
   const service = new ShipmentService(resolveD1(c.env));
   const shipments = await service.list();
   return c.json({ success: true, data: shipments });
 });
 
-shipmentsRouter.get('/:id', async (c) => {
+shipmentsRouter.get('/:id', optionalAuth, async (c) => {
   const service = new ShipmentService(resolveD1(c.env));
   const shipment = await service.getById(c.req.param('id'));
   return c.json({ success: true, data: shipment });

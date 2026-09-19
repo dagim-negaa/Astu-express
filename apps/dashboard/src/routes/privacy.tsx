@@ -21,20 +21,20 @@ function PrivacyComponent() {
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">Privacy Policy</h1>
-              <p className="text-xs text-slate-400 mt-0.5">R2 Express Ethiopian Shipping & Mini ERP</p>
+              <p className="text-xs text-slate-400 mt-0.5">ASTU Express Ethiopian Shipping & Mini ERP</p>
             </div>
           </div>
 
           <div className="prose prose-slate max-w-none text-sm leading-relaxed space-y-6 text-slate-600">
             <p>
-              At <strong>R2 Express</strong>, we are committed to protecting the privacy and personal data of our customers,
+              At <strong>ASTU Express</strong>, we are committed to protecting the privacy and personal data of our customers,
               partners, and staff across Ethiopia. This Privacy Policy details how we collect, store, and utilize information
               in connection with our storefront, order processing, and shipping center operations.
             </p>
 
             <h3 className="text-base font-bold text-slate-900">1. Information We Collect</h3>
             <p>
-              When you place an order or create an account with R2 Express, we collect essential details required for delivery:
+              When you place an order or create an account with ASTU Express, we collect essential details required for delivery:
               customer full name, Ethiopian phone number, email address, physical delivery address (city/woreda/landmark),
               and preferred payment method (Telebirr, CBE Birr, or Cash on Delivery).
             </p>

@@ -14,48 +14,76 @@ function SuppliersComponent() {
   const [search, setSearch] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editSupplier, setEditSupplier] = useState<any>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', city: '', country: 'Ethiopia', paymentTerms: 'Net 30', notes: '' });
 
-  const { data: suppliers = [], isLoading } = useQuery({
+  const { data: rawSuppliers = [], isLoading } = useQuery({
     queryKey: ['suppliers'],
     queryFn: async () => {
       const result = await apiClient.listSuppliers();
-      return result.data || [];
+      return Array.isArray(result.data) ? result.data : (result.data as any)?.data || [];
     },
   });
+  const suppliers = Array.isArray(rawSuppliers) ? rawSuppliers : [];
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiClient.createSupplier(data);
+      const res = await apiClient.createSupplier(data);
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to create supplier');
+      }
+      return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
       setIsAddModalOpen(false);
+      setModalError(null);
       resetForm();
+    },
+    onError: (err: any) => {
+      setModalError(err.message || 'Failed to create supplier');
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      return apiClient.updateSupplier(id, data);
+      const res = await apiClient.updateSupplier(id, data);
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to update supplier');
+      }
+      return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
       setEditSupplier(null);
+      setModalError(null);
       resetForm();
+    },
+    onError: (err: any) => {
+      setModalError(err.message || 'Failed to update supplier');
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiClient.deleteSupplier(id);
+      const res = await apiClient.deleteSupplier(id);
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to delete supplier');
+      }
+      return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
     },
+    onError: (err: any) => {
+      alert(err.message || 'Failed to delete supplier');
+    },
   });
 
-  const resetForm = () => setForm({ name: '', email: '', phone: '', address: '', city: '', country: 'Ethiopia', paymentTerms: 'Net 30', notes: '' });
+  const resetForm = () => {
+    setForm({ name: '', email: '', phone: '', address: '', city: '', country: 'Ethiopia', paymentTerms: 'Net 30', notes: '' });
+    setModalError(null);
+  };
 
   const filtered = suppliers.filter((s: any) =>
     s.name?.toLowerCase().includes(search.toLowerCase()) || s.city?.toLowerCase().includes(search.toLowerCase())
@@ -69,7 +97,7 @@ function SuppliersComponent() {
             Supplier & Procurement Management
           </h1>
           <p style={{ margin: '0.2rem 0 0', fontSize: '0.8125rem', color: '#64748b' }}>
-            R2 Express — Manage verified Ethiopian garment, fabric & logistics vendors.
+            ASTU Express — Manage verified Ethiopian garment, fabric & logistics vendors.
           </p>
         </div>
         <button
@@ -134,8 +162,13 @@ function SuppliersComponent() {
       </div>
 
       {/* Add/Edit Modal */}
-      <Modal isOpen={isAddModalOpen || !!editSupplier} onClose={() => { setIsAddModalOpen(false); setEditSupplier(null); }} title={editSupplier ? 'Edit Supplier' : 'Add Supplier'}>
+      <Modal isOpen={isAddModalOpen || !!editSupplier} onClose={() => { setIsAddModalOpen(false); setEditSupplier(null); setModalError(null); }} title={editSupplier ? 'Edit Supplier' : 'Add Supplier'}>
         <form onSubmit={(e) => { e.preventDefault(); if (editSupplier) { updateMutation.mutate({ id: editSupplier.id, data: form }); } else { createMutation.mutate(form); } }} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          {modalError && (
+            <div style={{ padding: '0.625rem 0.85rem', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '0.375rem', color: '#b91c1c', fontSize: '0.8125rem', fontWeight: 600 }}>
+              {modalError}
+            </div>
+          )}
           {['name', 'email', 'phone', 'address', 'city'].map((field) => (
             <div key={field}>
               <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.25rem', textTransform: 'capitalize' }}>{field}{field === 'name' ? ' *' : ''}</label>
@@ -151,8 +184,8 @@ function SuppliersComponent() {
               <option>Prepaid</option>
             </select>
           </div>
-          <button type="submit" disabled={createMutation.isPending || updateMutation.isPending} style={{ backgroundColor: '#0284c7', color: '#ffffff', padding: '0.625rem 1rem', borderRadius: '0.375rem', border: 'none', fontWeight: 700, fontSize: '0.8125rem', cursor: 'pointer', marginTop: '0.5rem' }}>
-            {editSupplier ? 'Update Supplier' : 'Create Supplier'}
+          <button type="submit" disabled={createMutation.isPending || updateMutation.isPending} style={{ backgroundColor: '#0284c7', color: '#ffffff', padding: '0.625rem 1rem', borderRadius: '0.375rem', border: 'none', fontWeight: 700, fontSize: '0.8125rem', cursor: createMutation.isPending || updateMutation.isPending ? 'wait' : 'pointer', marginTop: '0.5rem' }}>
+            {createMutation.isPending || updateMutation.isPending ? 'Saving...' : editSupplier ? 'Update Supplier' : 'Create Supplier'}
           </button>
         </form>
       </Modal>

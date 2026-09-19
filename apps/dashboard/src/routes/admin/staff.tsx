@@ -500,7 +500,7 @@ function StaffComponent() {
               />
             </div>
             <span style={{ fontSize: '0.6875rem', color: '#8a7a6a', marginTop: '0.2rem', display: 'block' }}>
-              Credentials used to log into the R2 Express Web Admin portal.
+              Credentials used to log into the ASTU Express Web Admin portal.
             </span>
           </div>
 

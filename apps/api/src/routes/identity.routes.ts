@@ -1,7 +1,8 @@
 import { Hono } from "hono";
 import { createAuth } from "../lib/auth";
-import { requireAuth, requireRole, optionalAuth, resolveD1, type Env } from "../middleware/auth";
+import { requireAuth, requireRole, optionalAuth, resolveD1, resolveSessionUser, type Env } from "../middleware/auth";
 import { validateJson } from "../middleware/validator";
+import { CustomerRepository } from "../modules/customers/customers.repository";
 import {
   LoginSchema,
   RegisterSchema,
@@ -13,28 +14,65 @@ import {
 
 export const identityRouter = new Hono<Env>();
 
+function getAuth(c: any, d1 = resolveD1(c.env)) {
+  const baseURL = c.env.API_BASE_URL || new URL(c.req.url).origin;
+  return createAuth(d1, c.env.BETTER_AUTH_SECRET, baseURL);
+}
+
 // ============================================================================
 // AUTH & SESSION ENDPOINTS
 // ============================================================================
 identityRouter.post("/auth/sign-in", validateJson(LoginSchema), async (c) => {
   try {
     const body = c.req.valid("json");
-    const auth = createAuth(resolveD1(c.env), c.env.BETTER_AUTH_SECRET);
+    const cleanEmail = body.email.toLowerCase().trim();
+    const auth = getAuth(c);
     const result = await auth.api.signInEmail({
       body: {
-        email: body.email,
+        email: cleanEmail,
         password: body.password,
       },
       headers: c.req.raw.headers,
     });
+
+    const token = (result as any)?.token || (result as any)?.session?.token;
+    const user = result.user || (result as any)?.session?.user;
+
+    const d1 = resolveD1(c.env);
+    if (d1 && user) {
+      const userRole = (user.role || "").toLowerCase();
+      if (userRole === "customer" || !["admin", "manager", "operator", "owner"].includes(userRole)) {
+        try {
+          const custRepo = new CustomerRepository(d1);
+          await custRepo.ensureCustomer({
+            name: user.name || cleanEmail.split("@")[0],
+            email: cleanEmail,
+            phone: (user as any).phone || "N/A",
+          });
+        } catch (e) {
+          console.warn("Could not sync to customers table on sign-in:", e);
+        }
+      }
+    }
+
+    if (token) {
+      c.header(
+        "Set-Cookie",
+        `better-auth.session_token=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000`,
+        { append: true }
+      );
+    }
+
     return c.json({
       success: true,
-      token: (result as any)?.token,
-      user: result.user,
+      token,
+      session: (result as any)?.session,
+      user,
     });
   } catch (err: any) {
+    const errorMsg = err.body?.message || err.message || "Invalid email or password";
     return c.json(
-      { success: false, error: err.message || "Invalid email or password" },
+      { success: false, error: errorMsg },
       401
     );
   }
@@ -43,27 +81,70 @@ identityRouter.post("/auth/sign-in", validateJson(LoginSchema), async (c) => {
 identityRouter.post("/auth/sign-up", validateJson(RegisterSchema), async (c) => {
   try {
     const body = c.req.valid("json");
-    const auth = createAuth(resolveD1(c.env), c.env.BETTER_AUTH_SECRET);
+    const cleanName = (body.name || "Customer").trim();
+    const cleanEmail = body.email.toLowerCase().trim();
+    const auth = getAuth(c);
+
     const result = await auth.api.signUpEmail({
       body: {
-        name: body.name || "Customer",
-        email: body.email,
+        name: cleanName,
+        email: cleanEmail,
         password: body.password,
         phone: body.phone,
       } as any,
       headers: c.req.raw.headers,
     });
+
+    const token = (result as any)?.token || (result as any)?.session?.token;
+    const user = result.user || (result as any)?.session?.user;
+
+    const d1 = resolveD1(c.env);
+    if (d1) {
+      try {
+        await d1
+          .prepare("UPDATE user SET role = 'customer' WHERE email = ?")
+          .bind(cleanEmail)
+          .run();
+      } catch (e) {
+        console.warn("Could not set user role to customer:", e);
+      }
+
+      try {
+        const custRepo = new CustomerRepository(d1);
+        await custRepo.ensureCustomer({
+          name: cleanName,
+          email: cleanEmail,
+          phone: body.phone || "N/A",
+        });
+      } catch (e) {
+        console.warn("Could not sync to customers table:", e);
+      }
+    }
+
+    if (token) {
+      c.header(
+        "Set-Cookie",
+        `better-auth.session_token=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000`,
+        { append: true }
+      );
+    }
+
     return c.json(
       {
         success: true,
-        token: (result as any)?.token,
-        user: result.user,
+        token,
+        session: (result as any)?.session,
+        user: {
+          ...user,
+          role: "customer",
+        },
       },
       201
     );
   } catch (err: any) {
+    const errorMsg = err.body?.message || err.message || "Sign-up failed";
     return c.json(
-      { success: false, error: err.message || "Sign-up failed" },
+      { success: false, error: errorMsg },
       400
     );
   }
@@ -71,31 +152,34 @@ identityRouter.post("/auth/sign-up", validateJson(RegisterSchema), async (c) => 
 
 identityRouter.post("/auth/sign-out", async (c) => {
   try {
-    const auth = createAuth(resolveD1(c.env), c.env.BETTER_AUTH_SECRET);
+    const auth = getAuth(c);
     await auth.api.signOut({
       headers: c.req.raw.headers,
     });
-    return c.json({ success: true });
   } catch {
-    return c.json({ success: true });
+    // Ignore error
   }
+  c.header(
+    "Set-Cookie",
+    "better-auth.session_token=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0",
+    { append: true }
+  );
+  return c.json({ success: true });
 });
 
 identityRouter.get("/me", async (c) => {
   try {
-    const auth = createAuth(resolveD1(c.env), c.env.BETTER_AUTH_SECRET);
-    const session = await auth.api.getSession({
-      headers: c.req.raw.headers,
-    });
+    const d1 = resolveD1(c.env);
+    const sessionUser = d1 ? await resolveSessionUser(c, d1) : null;
 
-    if (!session || !session.user) {
+    if (!sessionUser || !sessionUser.user) {
       return c.json({ authenticated: false, error: "No active session" }, 401);
     }
 
     return c.json({
       authenticated: true,
-      user: session.user,
-      session: session.session,
+      user: sessionUser.user,
+      session: sessionUser.session,
     });
   } catch (err: any) {
     return c.json({ authenticated: false, error: "Authentication check failed" }, 401);
@@ -111,7 +195,7 @@ identityRouter.on(
     try {
       const currentUser = c.get("user");
       const body = c.req.valid("json");
-      const auth = createAuth(resolveD1(c.env), c.env.BETTER_AUTH_SECRET);
+      const auth = getAuth(c);
 
       if (body.newPassword && body.oldPassword) {
         await auth.api.changePassword({
@@ -222,7 +306,7 @@ identityRouter.get(
   requireRole(["admin", "Admin", "owner", "Owner"]),
   async (c) => {
     try {
-      const auth = createAuth(resolveD1(c.env), c.env.BETTER_AUTH_SECRET);
+      const auth = getAuth(c);
       let staffList: any[] = [];
       try {
         const result = await auth.api.listUsers({
@@ -281,7 +365,7 @@ identityRouter.post(
   async (c) => {
     try {
       const body = c.req.valid("json");
-      const auth = createAuth(resolveD1(c.env), c.env.BETTER_AUTH_SECRET);
+      const auth = getAuth(c);
       const rawRole = (body.role || "").toLowerCase();
       let targetRole = "operator";
       if (rawRole === "owner") targetRole = "owner";
@@ -340,7 +424,7 @@ identityRouter.patch(
       const id = c.req.param("id");
       const body = c.req.valid("json");
       const d1 = resolveD1(c.env);
-      const auth = createAuth(d1, c.env.BETTER_AUTH_SECRET);
+      const auth = getAuth(c, d1);
 
       if (body.role) {
         const rawRole = body.role.toLowerCase();
@@ -448,7 +532,7 @@ identityRouter.patch(
 identityRouter.delete("/staff/:id", requireRole(["admin", "Admin", "owner", "Owner"]), async (c) => {
   try {
     const id = c.req.param("id");
-    const auth = createAuth(resolveD1(c.env), c.env.BETTER_AUTH_SECRET);
+    const auth = getAuth(c);
     await auth.api.removeUser({
       body: {
         userId: id,
@@ -510,5 +594,15 @@ identityRouter.post("/admin/reset-database", requireRole(["admin", "Admin"]), as
     return c.json({ success: true, message: "Database wiped and master admin re-seeded successfully." });
   } catch (err: any) {
     return c.json({ error: err.message || "Failed to reset database" }, 500);
+  }
+});
+
+identityRouter.on(["GET", "POST"], "/admin/seed-catalog", async (c) => {
+  try {
+    const { seedRealGarmentsAndStorageImages } = await import("../db/seed");
+    await seedRealGarmentsAndStorageImages(resolveD1(c.env));
+    return c.json({ success: true, message: "Real garments and proxy storage images seeded successfully." });
+  } catch (err: any) {
+    return c.json({ error: err.message || "Failed to seed catalog" }, 500);
   }
 });

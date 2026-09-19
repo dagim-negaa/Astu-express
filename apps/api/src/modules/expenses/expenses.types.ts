@@ -5,6 +5,8 @@ export interface Expense {
   amountEtb: number;
   date: string;
   paymentMethod: string;
+  accountId?: string | null;
+  accountName?: string | null;
   reference: string | null;
   createdAt: string;
 }
@@ -15,6 +17,7 @@ export interface CreateExpenseInput {
   amountEtb: number;
   date: string;
   paymentMethod?: string;
+  accountId?: string | null;
   reference?: string | null;
 }
 

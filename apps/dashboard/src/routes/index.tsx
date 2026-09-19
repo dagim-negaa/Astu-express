@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useStorefrontProducts } from '../hooks/useStorefrontProducts';
+import { useCustomerAuth } from '../hooks/useCustomerAuth';
 import { ProductCard } from '../components/storefront/ProductCard';
 import { StorefrontLayout } from '../components/storefront/StorefrontLayout';
-import { Truck, ShieldCheck, Clock, ArrowRight, Package, Sparkles } from 'lucide-react';
+import { Truck, ShieldCheck, Clock, ArrowRight, Package, Sparkles, UserCheck } from 'lucide-react';
 
 export const Route = createFileRoute('/')({
   component: HomeComponent,
@@ -10,36 +11,63 @@ export const Route = createFileRoute('/')({
 
 function HomeComponent() {
   const { data: products = [], isLoading } = useStorefrontProducts();
+  const { customer, isLoggedIn } = useCustomerAuth();
   const featured = products.filter((p: any) => p.isFeatured).slice(0, 4);
   const recent = products.slice(0, 8);
 
   return (
     <StorefrontLayout>
       {/* Hero Banner */}
-      <section className="bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px] opacity-15"></div>
+      <section className="relative bg-slate-950 text-white overflow-hidden border-b border-slate-800">
+        {/* Background image with contrast overlay */}
+        <div className="absolute inset-0 z-0 select-none pointer-events-none">
+          <img
+            src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1920&q=80"
+            alt="Ethiopian fashion boutique background"
+            aria-hidden="true"
+            className="w-full h-full object-cover object-center opacity-55"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/65 to-slate-950/35" />
+        </div>
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/30 text-sky-300 text-xs font-semibold mb-4 backdrop-blur-sm">
-              <Sparkles size={14} /> Ethiopian Shipping Center & Mini ERP
-            </div>
-            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4 leading-tight">
-              Express Shipping & Premium Quality, Delivered Across Ethiopia
+            {isLoggedIn && customer ? (
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-slate-900/90 border border-slate-700 text-slate-200 text-xs font-semibold mb-4">
+                <UserCheck size={14} className="text-emerald-400" />
+                <span>Welcome back, <strong className="text-white font-bold">{customer.name}</strong></span>
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-slate-900/90 border border-slate-700 text-slate-300 text-xs font-medium mb-4">
+                <Sparkles size={14} className="text-sky-400" /> Ethiopian Shipping Center &amp; Mini ERP
+              </div>
+            )}
+
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 leading-tight text-white">
+              {isLoggedIn && customer ? (
+                <>Welcome back, <span className="text-sky-400">{customer.name}</span> — Ready for Express Delivery</>
+              ) : (
+                <>Express Shipping &amp; Premium Quality, Delivered Across Ethiopia</>
+              )}
             </h1>
-            <p className="text-base sm:text-lg text-slate-300 mb-8 leading-relaxed">
-              Order authentic Ethiopian garments, ready-to-wear fashion, and lifestyle essentials.
-              Seamless local delivery via Telebirr, CBE Birr, and Cash on Delivery.
+
+            <p className="text-base text-slate-300 mb-8 leading-relaxed">
+              {isLoggedIn && customer
+                ? `Logged in as ${customer.name} (${customer.email}). Explore handcrafted Ethiopian garments, track shipments live, and enjoy expedited dispatch.`
+                : 'Order authentic Ethiopian garments, ready-to-wear fashion, and lifestyle essentials. Seamless local delivery via Telebirr, CBE Birr, and Cash on Delivery.'}
             </p>
-            <div className="flex flex-wrap items-center gap-4">
+
+            <div className="flex flex-wrap items-center gap-3">
               <Link
                 to="/shop"
-                className="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white px-7 py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-sky-600/30 transition-all hover:translate-y-[-1px]"
+                className="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white px-6 py-3 rounded-md font-bold text-sm shadow-sm"
               >
                 Shop Catalog <ArrowRight size={16} />
               </Link>
               <Link
                 to="/orders"
-                className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 px-6 py-3.5 rounded-xl font-semibold text-sm transition-colors backdrop-blur-sm"
+                search={{}}
+                className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white border border-slate-700 px-6 py-3 rounded-md font-semibold text-sm shadow-sm"
               >
                 <Package size={16} /> Track Shipment
               </Link>
@@ -97,20 +125,20 @@ function HomeComponent() {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
           {[
-            { id: 'rtw', name: 'Ready-to-Wear', emoji: '👗', count: 'Modern styles' },
-            { id: 'traditional', name: 'Traditional', emoji: '🇪🇹', count: 'Habesha Kemis' },
-            { id: 'outerwear', name: 'Outerwear', emoji: '🧥', count: 'Jackets & Coats' },
-            { id: 'accessories', name: 'Accessories', emoji: '💍', count: 'Leather & Crafts' },
-            { id: 'footwear', name: 'Footwear', emoji: '👟', count: 'Boots & Shoes' },
+            { id: 'rtw', name: 'Ready-to-Wear', count: 'Modern styles' },
+            { id: 'traditional', name: 'Traditional', count: 'Habesha Kemis' },
+            { id: 'outerwear', name: 'Outerwear', count: 'Jackets & Coats' },
+            { id: 'accessories', name: 'Accessories', count: 'Leather & Crafts' },
+            { id: 'footwear', name: 'Footwear', count: 'Boots & Shoes' },
           ].map((cat) => (
             <Link
               key={cat.id}
               to="/shop"
-              className="bg-white rounded-2xl p-5 text-center hover:shadow-md hover:border-sky-300 border border-slate-200 transition-all duration-200 group"
+              className="bg-white rounded-md p-4 text-center border border-slate-200"
             >
-              <div className="text-3xl mb-2.5 group-hover:scale-110 transition-transform duration-200">{cat.emoji}</div>
-              <div className="text-sm font-bold text-slate-900 group-hover:text-sky-600 transition-colors">{cat.name}</div>
-              <div className="text-[11px] text-slate-400 mt-0.5">{cat.count}</div>
+              <div className="text-[11px] font-mono font-bold uppercase text-slate-500 mb-1 tracking-wider">{cat.id}</div>
+              <div className="text-sm font-bold text-slate-900">{cat.name}</div>
+              <div className="text-[11px] text-slate-500 mt-0.5">{cat.count}</div>
             </Link>
           ))}
         </div>

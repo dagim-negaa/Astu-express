@@ -11,11 +11,38 @@ import {
 
 export const ordersRouter = new Hono<Env>();
 
+/**
+ * Public Order Tracking Endpoint
+ * Searches by tracking number, order ID, or shipment tracking code
+ * Returns live delivery timeline, carrier, and package item details
+ */
+ordersRouter.get("/track/:trackingNumber", async (c) => {
+  try {
+    const trackingNumber = c.req.param("trackingNumber");
+    if (!trackingNumber || trackingNumber.trim().length === 0) {
+      return c.json({ error: "Tracking number or order ID is required" }, 400);
+    }
+    const repo = new OrderRepository(resolveD1(c.env));
+    const service = new OrderService(repo);
+    const trackingInfo = await service.trackOrder(trackingNumber);
+    if (!trackingInfo) {
+      return c.json({
+        error: `No shipment found matching tracking number or order ID "${trackingNumber}". Please check the number and try again.`
+      }, 404);
+    }
+    return c.json({ success: true, data: trackingInfo });
+  } catch (err: any) {
+    return c.json({ error: err.message || "Failed to track order" }, 500);
+  }
+});
+
 ordersRouter.get("/", optionalAuth, validateQuery(OrderQuerySchema), async (c) => {
   try {
     const query = c.req.valid("query");
     const status = query.status;
     const queryEmail = query.email || query.customerEmail;
+    const trackingNumber = query.trackingNumber;
+    const searchQuery = query.query || query.q;
     const orderSource = query.orderSource;
     const storeId = query.storeId;
     const limit = query.limit;
@@ -36,10 +63,12 @@ ordersRouter.get("/", optionalAuth, validateQuery(OrderQuerySchema), async (c) =
       }
     } else {
       // Unauthenticated guest request
-      if (queryEmail) {
+      if (trackingNumber || searchQuery) {
+        // Allowed: searching directly by tracking number or order reference
+      } else if (queryEmail) {
         customerEmail = queryEmail;
       } else {
-        return c.json({ error: "Unauthorized: Please sign in or provide email to view orders" }, 401);
+        return c.json({ error: "Unauthorized: Please sign in or provide email/tracking number to view orders" }, 401);
       }
     }
 
@@ -48,6 +77,8 @@ ordersRouter.get("/", optionalAuth, validateQuery(OrderQuerySchema), async (c) =
     const items = await service.listOrders({
       status,
       customerEmail,
+      trackingNumber,
+      query: searchQuery,
       orderSource,
       storeId,
       limit,

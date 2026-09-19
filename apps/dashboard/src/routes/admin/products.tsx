@@ -13,6 +13,7 @@ import {
   Filter,
   CheckCircle2,
   Trash2,
+  Warehouse,
 } from 'lucide-react';
 
 export const Route = createFileRoute('/admin/products')({
@@ -129,7 +130,7 @@ function ProductsComponent() {
             Products
           </h1>
           <p style={{ margin: '0.2rem 0 0', fontSize: '0.8125rem', color: '#64748b' }}>
-            R2 Express Catalog & Inventory Management
+            ASTU Express Catalog & Inventory Management
           </p>
         </div>
 
@@ -281,6 +282,46 @@ function ProductsComponent() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Central Company Warehouse & Storefront Source Banner */}
+      <div
+        style={{
+          padding: '0.75rem 1rem',
+          backgroundColor: '#f8fafc',
+          border: '1px solid #e2e8f0',
+          borderRadius: '0.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '0.75rem',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', fontSize: '0.8125rem', color: '#334155' }}>
+          <Warehouse size={17} color="#0284c7" style={{ flexShrink: 0 }} />
+          <span>
+            <strong>Company Inventory Invariant:</strong> All physical company stock is owned and held in warehouses via GRN. The <strong>only way</strong> to add or list a product on the storefront is right here on this <strong>Product Page</strong> by selecting the branch, category, and source warehouse item into production.
+          </span>
+        </div>
+        <button
+          onClick={() => navigate({ to: '/admin/warehouse' })}
+          style={{
+            backgroundColor: '#ffffff',
+            color: '#0f172a',
+            border: '1px solid #cbd5e1',
+            padding: '0.35rem 0.75rem',
+            borderRadius: '0.375rem',
+            fontSize: '0.75rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+          }}
+        >
+          <Warehouse size={13} /> View Warehouse Stock
+        </button>
       </div>
 
       {/* Filter Bar: Category Dropdown & Search & Spotlight Filter */}
@@ -691,7 +732,7 @@ function ProductsComponent() {
                 style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '0.375rem', border: '1px solid #cbd5e1', fontSize: '0.8125rem' }}
               />
               <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.3rem', display: 'block' }}>
-                Current: <strong>{activeRestockTarget.stockQuantity}</strong> units ➔ New Total:{' '}
+                Current: <strong>{activeRestockTarget.stockQuantity}</strong> units &rarr; New Total:{' '}
                 <strong style={{ color: '#16a34a' }}>{activeRestockTarget.stockQuantity + Number(restockQuantity || 0)}</strong> units
                 {' '}(New 100% batch capacity baseline)
               </span>

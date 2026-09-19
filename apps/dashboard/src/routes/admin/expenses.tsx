@@ -26,13 +26,29 @@ function ExpensesComponent() {
   const queryClient = useQueryClient();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState('');
-  const [form, setForm] = useState({ category: 'shipping', description: '', amountEtb: 0, date: new Date().toISOString().split('T')[0], paymentMethod: 'cash', reference: '' });
+  const [form, setForm] = useState({
+    category: 'shipping',
+    description: '',
+    amountEtb: 0,
+    date: new Date().toISOString().split('T')[0],
+    paymentMethod: 'cash',
+    reference: '',
+    accountId: '',
+  });
+
+  const { data: accounts = [] } = useQuery({
+    queryKey: ['bankAccounts'],
+    queryFn: async () => {
+      const result = await apiClient.listBankAccounts();
+      return Array.isArray(result.data) ? result.data : (result.data as any)?.data || [];
+    },
+  });
 
   const { data: expenses = [], isLoading } = useQuery({
     queryKey: ['expenses', categoryFilter],
     queryFn: async () => {
       const result = await apiClient.listExpenses({ category: categoryFilter || undefined });
-      return result.data || [];
+      return Array.isArray(result.data) ? result.data : (result.data as any)?.data || [];
     },
   });
 
@@ -45,12 +61,27 @@ function ExpensesComponent() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: any) => apiClient.createExpense(data),
+    mutationFn: async (data: any) => {
+      const res = await apiClient.createExpense(data);
+      if (!res.success) throw new Error(res.error || 'Failed to record expense');
+      return res.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       queryClient.invalidateQueries({ queryKey: ['expenseSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['bankAccounts'] });
+      queryClient.invalidateQueries({ queryKey: ['financeDashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['financialTransactions'] });
       setIsAddModalOpen(false);
-      setForm({ category: 'shipping', description: '', amountEtb: 0, date: new Date().toISOString().split('T')[0], paymentMethod: 'cash', reference: '' });
+      setForm({
+        category: 'shipping',
+        description: '',
+        amountEtb: 0,
+        date: new Date().toISOString().split('T')[0],
+        paymentMethod: 'cash',
+        reference: '',
+        accountId: '',
+      });
     },
   });
 
@@ -59,6 +90,9 @@ function ExpensesComponent() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       queryClient.invalidateQueries({ queryKey: ['expenseSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['bankAccounts'] });
+      queryClient.invalidateQueries({ queryKey: ['financeDashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['financialTransactions'] });
     },
   });
 
@@ -70,7 +104,7 @@ function ExpensesComponent() {
             Operational Expenses Tracking
           </h1>
           <p style={{ margin: '0.2rem 0 0', fontSize: '0.8125rem', color: '#64748b' }}>
-            R2 Express — Track warehouse overhead, cargo courier costs, packaging and administrative expenditures.
+            ASTU Express — Track warehouse overhead, cargo courier costs, packaging and administrative expenditures.
           </p>
         </div>
         <button onClick={() => setIsAddModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', backgroundColor: '#0284c7', color: '#ffffff', padding: '0.5rem 0.95rem', borderRadius: '0.375rem', border: 'none', fontWeight: 700, fontSize: '0.8125rem', cursor: 'pointer' }}>
@@ -169,13 +203,26 @@ function ExpensesComponent() {
               <input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '0.375rem', border: '1px solid #cbd5e1', fontSize: '0.8125rem' }} />
             </div>
           </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.25rem' }}>Payment Method</label>
-            <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })} style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '0.375rem', border: '1px solid #cbd5e1', fontSize: '0.8125rem' }}>
-              <option value="cash">Cash on Hand</option>
-              <option value="bank_transfer">Commercial Bank of Ethiopia (CBE)</option>
-              <option value="telebirr">Telebirr Merchant</option>
-            </select>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.25rem' }}>Payment Method</label>
+              <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })} style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '0.375rem', border: '1px solid #cbd5e1', fontSize: '0.8125rem' }}>
+                <option value="cash">Cash on Hand</option>
+                <option value="bank_transfer">Bank Transfer (CBE / Awash)</option>
+                <option value="telebirr">Telebirr Merchant</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.25rem' }}>Deduct From Bank Account</label>
+              <select value={form.accountId} onChange={(e) => setForm({ ...form, accountId: e.target.value })} style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '0.375rem', border: '1px solid #cbd5e1', fontSize: '0.8125rem' }}>
+                <option value="">Auto-resolve from method</option>
+                {accounts.map((a: any) => (
+                  <option key={a.id} value={a.id}>
+                    {a.accountName} (ETB {Number(a.currentBalance || 0).toLocaleString()})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
           <button type="submit" disabled={createMutation.isPending} style={{ backgroundColor: '#0284c7', color: '#ffffff', padding: '0.625rem 1rem', borderRadius: '0.375rem', border: 'none', fontWeight: 700, fontSize: '0.8125rem', cursor: 'pointer', marginTop: '0.5rem' }}>
             {createMutation.isPending ? 'Adding...' : 'Add Expense'}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layers, Store, Plus, RefreshCw, Star } from 'lucide-react';
+import { Layers, Store, Plus, RefreshCw, Star, Warehouse } from 'lucide-react';
 import type { StoreLocation } from '../../store/AdminStore';
 
 interface CategoryStoreSelectorProps {
@@ -8,6 +8,9 @@ interface CategoryStoreSelectorProps {
   physicalStores: StoreLocation[];
   selectedCategory: string;
   setSelectedCategory: (cat: string) => void;
+  selectedWarehouseId?: string;
+  setSelectedWarehouseId?: (id: string) => void;
+  warehouses?: any[];
   isCreatingNewCat: boolean;
   setIsCreatingNewCat: (val: boolean) => void;
   customCategoryName: string;
@@ -22,6 +25,9 @@ export const CategoryStoreSelector: React.FC<CategoryStoreSelectorProps> = ({
   physicalStores,
   selectedCategory,
   setSelectedCategory,
+  selectedWarehouseId,
+  setSelectedWarehouseId,
+  warehouses = [],
   isCreatingNewCat,
   setIsCreatingNewCat,
   customCategoryName,
@@ -52,11 +58,11 @@ export const CategoryStoreSelector: React.FC<CategoryStoreSelectorProps> = ({
       >
         <Layers size={16} color="#0ea5e9" />
         <h3 style={{ margin: 0, fontSize: '0.9375rem', fontWeight: 700, color: '#211a13' }}>
-          1. Store, Category & Auto-SKU
+          1. Branch, Category & Source Warehouse
         </h3>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
         {/* Store Selector */}
         <div>
           <label
@@ -161,6 +167,45 @@ export const CategoryStoreSelector: React.FC<CategoryStoreSelectorProps> = ({
             </select>
           )}
         </div>
+
+        {/* Source Warehouse Selector */}
+        {setSelectedWarehouseId && (
+          <div>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.3rem',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                color: '#211a13',
+                marginBottom: '0.35rem',
+              }}
+            >
+              <Warehouse size={13} color="#0ea5e9" /> Source Warehouse *
+            </label>
+            <select
+              value={selectedWarehouseId}
+              onChange={(e) => setSelectedWarehouseId(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.55rem 0.75rem',
+                borderRadius: '0.375rem',
+                border: '1px solid #cbd5e1',
+                fontSize: '0.8125rem',
+                backgroundColor: '#ffffff',
+                fontWeight: 600,
+                color: '#211a13',
+              }}
+            >
+              {warehouses.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name} ({w.code})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Auto-Generated SKU */}
         <div>

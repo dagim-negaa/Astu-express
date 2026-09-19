@@ -14,6 +14,16 @@ export default defineConfig({
         target: "http://localhost:8787",
         changeOrigin: true,
       },
+      "/storage": {
+        target: "http://localhost:8787",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/storage/, "/api/assets/storage"),
+      },
+      "/r2": {
+        target: "http://localhost:8787",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/r2/, "/api/assets/r2"),
+      },
     },
   },
   build: {

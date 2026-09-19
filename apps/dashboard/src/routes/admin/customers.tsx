@@ -33,7 +33,7 @@ function CustomersComponent() {
             Customer Management
           </h1>
           <p style={{ margin: '0.2rem 0 0', fontSize: '0.8125rem', color: '#64748b' }}>
-            R2 Express — Manage registered clientele, measure lifetime spend, and view order histories.
+            ASTU Express — Manage registered clientele, measure lifetime spend, and view order histories.
           </p>
         </div>
 
@@ -77,7 +77,7 @@ function CustomersComponent() {
               {customers.length === 0 ? 'No customer profiles registered yet.' : 'No customers match your search.'}
             </p>
             <p style={{ margin: '0.2rem 0 0', fontSize: '0.8125rem' }}>
-              Customer records are automatically synchronized when R2 Express orders are placed.
+              Customer records are automatically synchronized when ASTU Express orders are placed.
             </p>
           </div>
         ) : (

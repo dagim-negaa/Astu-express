@@ -1,16 +1,20 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '../../lib/api';
 import { useAdminStore } from '../../store/AdminStore';
 import {
   FileText,
   Palette,
   Check,
   AlertCircle,
+  Warehouse,
+  Store,
+  Layers,
 } from 'lucide-react';
-import { type GarmentStatus, CreateGarmentSchema, validateData } from '@astu/shared';
+import { type GarmentStatus } from '@astu/shared';
 import { generateImageVariants, uploadImageClusterToR2 } from '../../lib/compressImage';
 import { API_URL } from '../../lib/auth-client';
-import { CategoryStoreSelector } from '../../components/product-studio/CategoryStoreSelector';
 import { PricingProfitMarginCard } from '../../components/product-studio/PricingProfitMarginCard';
 import {
   VariantAttributesSelector,
@@ -29,9 +33,41 @@ export const Route = createFileRoute('/admin/products_/new')({
 
 function CreateProductPageComponent() {
   const navigate = useNavigate();
-  const { stores, activeStore, addProduct } = useAdminStore();
+  const queryClient = useQueryClient();
+  const { stores, activeStore } = useAdminStore();
 
   const physicalStores = useMemo(() => stores.filter((s) => s.id !== 'all'), [stores]);
+
+  // Read URL search params if navigated from warehouse page
+  const initialParams = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      const sp = new URLSearchParams(window.location.search);
+      return {
+        warehouseId: sp.get('warehouseId') || '',
+        warehouseItemId: sp.get('warehouseItemId') || sp.get('itemId') || '',
+        category: sp.get('category') || '',
+      };
+    }
+    return { warehouseId: '', warehouseItemId: '', category: '' };
+  }, []);
+
+  // Fetch Warehouses
+  const { data: rawWarehouses = [] } = useQuery({
+    queryKey: ['warehouses'],
+    queryFn: async () => {
+      const res = await apiClient.listWarehouses();
+      return Array.isArray(res.data) ? res.data : (res.data as any)?.data || [];
+    },
+  });
+  const warehouses = Array.isArray(rawWarehouses) ? rawWarehouses : [];
+
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>(() => initialParams.warehouseId || '');
+
+  useEffect(() => {
+    if (!selectedWarehouseId && warehouses.length > 0) {
+      setSelectedWarehouseId(warehouses[0].id);
+    }
+  }, [warehouses, selectedWarehouseId]);
 
   // 1. Store & Category & SKU State
   const [selectedStoreId, setSelectedStoreId] = useState<string>(() => {
@@ -45,20 +81,135 @@ function CreateProductPageComponent() {
     }
   }, [physicalStores, activeStore.id, selectedStoreId]);
 
-  const [selectedCategory, setSelectedCategory] = useState<string>('rtw');
-  const [isCreatingNewCat, setIsCreatingNewCat] = useState<boolean>(false);
-  const [customCategoryName, setCustomCategoryName] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>(() => initialParams.category || 'shemiz');
   const [skuSeed, setSkuSeed] = useState<number>(() => Math.floor(100 + Math.random() * 900));
+
+  // Query all available warehouse items in the selected warehouse
+  const { data: rawAllWhItems = [], isLoading: isWhItemsLoading } = useQuery({
+    queryKey: ['whItemsForProductStudioAll', selectedWarehouseId],
+    queryFn: async () => {
+      if (!selectedWarehouseId) return [];
+      const res = await apiClient.listWarehouseItems({
+        warehouseId: selectedWarehouseId,
+        availableOnly: true,
+      });
+      return Array.isArray(res.data) ? res.data : (res.data as any)?.data || [];
+    },
+    enabled: Boolean(selectedWarehouseId),
+  });
+  const allWhItems = Array.isArray(rawAllWhItems) ? rawAllWhItems : [];
+
+  // Group warehouse items stock by category
+  const categoryStockMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const item of allWhItems) {
+      const cat = (item.category || 'rtw').toLowerCase();
+      map[cat] = (map[cat] || 0) + (Number(item.quantity) || 0);
+    }
+    return map;
+  }, [allWhItems]);
+
+  // Master list of supported categories (Classic design without emojis)
+  const CATEGORY_LIST = useMemo(() => {
+    const base = [
+      { key: 'shemiz', label: 'Shemiz (Shirts / Tops)' },
+      { key: 'pants', label: 'Pants & Trousers' },
+      { key: 'electronics', label: 'Electronics & Gadgets' },
+      { key: 'traditional', label: 'Traditional Habesha' },
+      { key: 'rtw', label: 'Ready-to-Wear (RTW)' },
+      { key: 'outerwear', label: 'Outerwear & Jackets' },
+      { key: 'footwear', label: 'Footwear & Shoes' },
+      { key: 'accessories', label: 'Accessories & Bags' },
+      { key: 'suits', label: 'Suits & Formalwear' },
+    ];
+    const baseKeys = new Set(base.map((b) => b.key));
+    const extra: typeof base = [];
+    for (const item of allWhItems) {
+      const cat = (item.category || '').toLowerCase().trim();
+      if (cat && !baseKeys.has(cat)) {
+        baseKeys.add(cat);
+        extra.push({
+          key: cat,
+          label: cat.charAt(0).toUpperCase() + cat.slice(1),
+        });
+      }
+    }
+    return [...base, ...extra];
+  }, [allWhItems]);
+
+  // Matching items in this warehouse under selectedCategory
+  const matchingCategoryItems = useMemo(() => {
+    return allWhItems.filter(
+      (item: any) =>
+        (item.category || 'rtw').toLowerCase() === selectedCategory.toLowerCase() &&
+        Number(item.quantity) > 0
+    );
+  }, [allWhItems, selectedCategory]);
+
+  const totalCategoryStock = useMemo(() => {
+    return matchingCategoryItems.reduce((acc: number, item: any) => acc + (Number(item.quantity) || 0), 0);
+  }, [matchingCategoryItems]);
+
+  // Selected warehouse item state (only 1 item batch at a time can be added to production)
+  const [selectedWarehouseItem, setSelectedWarehouseItem] = useState<any>(null);
+
+  // Production quantity state: "How much [Category] items add on production?"
+  const [quantityToProduce, setQuantityToProduce] = useState<number>(1);
 
   // 2. Product Details & Pricing State
   const [title, setTitle] = useState<string>('');
-  const [buyingPriceEtb, setBuyingPriceEtb] = useState<number>(3000);
+  const [buyingPriceEtb, setBuyingPriceEtb] = useState<number>(0);
   const [profitMargin, setProfitMargin] = useState<number>(25);
   const [isCustomMargin, setIsCustomMargin] = useState<boolean>(false);
-  const [sellingPriceEtb, setSellingPriceEtb] = useState<number>(3750);
-  const [initialStock, setInitialStock] = useState<number>(20);
+  const [sellingPriceEtb, setSellingPriceEtb] = useState<number>(0);
+  const [initialStock, setInitialStock] = useState<number>(1);
   const [status, setStatus] = useState<GarmentStatus>('in_production');
   const [description, setDescription] = useState<string>('');
+
+  const handleSelectWarehouseItem = (item: any) => {
+    setSelectedWarehouseItem(item);
+    setTitle(item.itemTitle);
+    const cost = Number(item.unitCostEtb) || 0;
+    setBuyingPriceEtb(cost);
+    const calculatedSelling = cost > 0 ? Math.round(cost * (1 + profitMargin / 100)) : 1000;
+    setSellingPriceEtb(calculatedSelling);
+    const maxQty = Number(item.quantity) || 1;
+    const initialQty = Math.min(quantityToProduce || 1, maxQty);
+    setQuantityToProduce(initialQty);
+    setInitialStock(initialQty);
+    setDescription(`Transferred from Warehouse (${item.grnNumber || 'GRN'}) — Supplier: ${item.supplierName || 'Vendor'}`);
+    setPublishError(null);
+  };
+
+  const handleQuantityChange = (val: number) => {
+    const maxQty = Number(selectedWarehouseItem?.quantity) || totalCategoryStock || 1;
+    const clean = Math.max(1, Math.min(maxQty, val));
+    setQuantityToProduce(clean);
+    setInitialStock(clean);
+  };
+
+  // Auto-select warehouse item when matching category items change
+  useEffect(() => {
+    if (matchingCategoryItems.length > 0) {
+      if (
+        !selectedWarehouseItem ||
+        !matchingCategoryItems.some((i: any) => i.id === selectedWarehouseItem.id)
+      ) {
+        handleSelectWarehouseItem(matchingCategoryItems[0]);
+      }
+    } else {
+      setSelectedWarehouseItem(null);
+    }
+  }, [matchingCategoryItems, selectedCategory]);
+
+  useEffect(() => {
+    if (initialParams.warehouseItemId && allWhItems.length > 0 && !selectedWarehouseItem) {
+      const found = allWhItems.find((i: any) => i.id === initialParams.warehouseItemId);
+      if (found) {
+        handleSelectWarehouseItem(found);
+      }
+    }
+  }, [allWhItems, initialParams.warehouseItemId, selectedWarehouseItem]);
 
   // 3. Multi-Variant Colors & Sizes State
   const [selectedColors, setSelectedColors] = useState<string[]>(['Black']);
@@ -102,11 +253,8 @@ function CreateProductPageComponent() {
   }, [currentStoreObj]);
 
   const catCode = useMemo(() => {
-    if (isCreatingNewCat && customCategoryName.trim()) {
-      return customCategoryName.trim().slice(0, 3).toUpperCase();
-    }
-    return selectedCategory.slice(0, 3).toUpperCase();
-  }, [isCreatingNewCat, customCategoryName, selectedCategory]);
+    return (selectedCategory || 'GEN').slice(0, 3).toUpperCase();
+  }, [selectedCategory]);
 
   const autoSku = useMemo(() => {
     return `ASTU-${storeCode}-${catCode}-${skuSeed}`;
@@ -335,43 +483,58 @@ function CreateProductPageComponent() {
         if (c.images.side && !allImageIds.includes(c.images.side)) allImageIds.push(c.images.side);
       }
 
-      const finalCategory = isCreatingNewCat && customCategoryName.trim()
-        ? customCategoryName.trim().toLowerCase()
-        : selectedCategory;
+      const finalCategory = selectedCategory;
 
-      const qty = Number(initialStock) || 1;
+      if (!selectedWarehouseItem) {
+        setPublishError(
+          'Please select a warehouse item received via GRN before adding to storefront production. All storefront goods originate from warehouse inventory.'
+        );
+        setIsSubmitting(false);
+        setIsUploadingToR2(false);
+        return;
+      }
+
+      const qty = Number(quantityToProduce) || Number(initialStock) || 1;
+      if (qty > Number(selectedWarehouseItem.quantity)) {
+        setPublishError(
+          `Transfer quantity (${qty}) exceeds available warehouse inventory (${selectedWarehouseItem.quantity} pcs).`
+        );
+        setIsSubmitting(false);
+        setIsUploadingToR2(false);
+        return;
+      }
+
       const primaryColor = selectedColors[0] || 'Standard';
       const primarySize = selectedSizes[0] || 'Standard';
 
-      const productPayload = {
-        sku: autoSku,
-        title: title.trim(),
-        category: finalCategory,
+      const res = await apiClient.transferWarehouseItemToProduction({
+        warehouseItemId: selectedWarehouseItem.id,
         storeId: selectedStoreId,
-        priceEtb: Number(sellingPriceEtb) || 0,
-        buyingPriceEtb: Number(buyingPriceEtb) || 0,
+        category: finalCategory,
+        transferQuantity: qty,
+        sellingPriceEtb: Number(sellingPriceEtb) || 0,
         profitMargin: Number(profitMargin) || 0,
-        stockQuantity: qty,
-        initialStock: qty,
-        status,
+        title: title.trim(),
+        description: description.trim(),
         color: primaryColor,
         size: primarySize,
         colors: colorsPayload,
         sizes: selectedSizes.length > 0 ? selectedSizes : [primarySize],
         images: allImageIds,
         imageUrl: allImageIds[0] || undefined,
-        description: description.trim(),
-      };
+        status,
+        sku: autoSku,
+      });
 
-      const validation = validateData(CreateGarmentSchema, productPayload);
-      if (!validation.success) {
-        setPublishError(validation.error);
-        setIsSubmitting(false);
-        setIsUploadingToR2(false);
-        return;
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to transfer warehouse item to production');
       }
 
-      await addProduct(productPayload);
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['garments'] });
+      queryClient.invalidateQueries({ queryKey: ['warehouseItems'] });
+      queryClient.invalidateQueries({ queryKey: ['warehouses'] });
+
       navigate({ to: '/admin/products' });
     } catch (err: any) {
       setPublishError(
@@ -418,22 +581,431 @@ function CreateProductPageComponent() {
         >
           {/* LEFT COLUMN: Atelier Identity, Pricing & Inventory */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {/* 1. Store, Category & Auto-SKU */}
-            <CategoryStoreSelector
-              selectedStoreId={selectedStoreId}
-              setSelectedStoreId={setSelectedStoreId}
-              physicalStores={physicalStores}
-              selectedCategory={selectedCategory}
-              setSelectedCategory={setSelectedCategory}
-              isCreatingNewCat={isCreatingNewCat}
-              setIsCreatingNewCat={setIsCreatingNewCat}
-              customCategoryName={customCategoryName}
-              setCustomCategoryName={setCustomCategoryName}
-              autoSku={autoSku}
-              setSkuSeed={setSkuSeed}
-            />
+            {/* 1. Branch & Source Warehouse Selection */}
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                borderRadius: '0.5rem',
+                border: '1px solid #cbd5e1',
+                padding: '1.25rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1rem',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  borderBottom: '1px solid #f1f5f9',
+                  paddingBottom: '0.625rem',
+                }}
+              >
+                <Store size={16} color="#0284c7" />
+                <h3 style={{ margin: 0, fontSize: '0.9375rem', fontWeight: 700, color: '#0f172a' }}>
+                  1. Select Store Branch &amp; Source Warehouse
+                </h3>
+              </div>
 
-            {/* 2. Product Name & Atelier Notes */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+                {/* Store Branch */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.35rem' }}>
+                    Storefront Branch *
+                  </label>
+                  <select
+                    value={selectedStoreId}
+                    onChange={(e) => setSelectedStoreId(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.55rem 0.75rem',
+                      borderRadius: '0.375rem',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '0.8125rem',
+                      fontWeight: 600,
+                      backgroundColor: '#ffffff',
+                    }}
+                  >
+                    {physicalStores.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.location})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Source Warehouse */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.35rem' }}>
+                    Source Warehouse *
+                  </label>
+                  <select
+                    value={selectedWarehouseId}
+                    onChange={(e) => {
+                      setSelectedWarehouseId(e.target.value);
+                      setSelectedWarehouseItem(null);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '0.55rem 0.75rem',
+                      borderRadius: '0.375rem',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '0.8125rem',
+                      fontWeight: 600,
+                      backgroundColor: '#ffffff',
+                    }}
+                  >
+                    {warehouses.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name} ({w.code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Auto SKU */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0f172a' }}>Auto-Generated SKU</label>
+                    <button
+                      type="button"
+                      onClick={() => setSkuSeed(Math.floor(100 + Math.random() * 900))}
+                      style={{ background: 'none', border: 'none', color: '#0284c7', fontSize: '0.6875rem', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      Regenerate
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    readOnly
+                    value={autoSku}
+                    style={{
+                      width: '100%',
+                      padding: '0.55rem 0.75rem',
+                      borderRadius: '0.375rem',
+                      border: '1px solid #e2e8f0',
+                      backgroundColor: '#f8fafc',
+                      fontFamily: 'monospace',
+                      fontWeight: 700,
+                      fontSize: '0.8125rem',
+                      color: '#0f172a',
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Categories inside Selected Warehouse with Live Stock Badges */}
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                borderRadius: '0.5rem',
+                border: '1px solid #cbd5e1',
+                padding: '1.25rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.85rem',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.625rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <Layers size={16} color="#0284c7" />
+                  <h3 style={{ margin: 0, fontSize: '0.9375rem', fontWeight: 700, color: '#0f172a' }}>
+                    2. Categories inside {warehouses.find((w) => w.id === selectedWarehouseId)?.name || 'Warehouse'}
+                  </h3>
+                </div>
+                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                  Select a category to view stock &amp; allocate to production
+                </span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '0.625rem' }}>
+                {CATEGORY_LIST.map((cat) => {
+                  const stock = categoryStockMap[cat.key.toLowerCase()] || 0;
+                  const isSelected = selectedCategory.toLowerCase() === cat.key.toLowerCase();
+                  const hasStock = stock > 0;
+
+                  return (
+                    <button
+                      key={cat.key}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCategory(cat.key);
+                        setPublishError(null);
+                      }}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: '0.35rem',
+                        padding: '0.75rem',
+                        borderRadius: '0.375rem',
+                        border: isSelected ? '1.5px solid #0f172a' : '1px solid #cbd5e1',
+                        backgroundColor: isSelected ? '#f1f5f9' : hasStock ? '#ffffff' : '#f8fafc',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.6875rem', fontWeight: 700, color: isSelected ? '#0f172a' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          {cat.key}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '0.6875rem',
+                            fontWeight: 700,
+                            padding: '0.15rem 0.45rem',
+                            borderRadius: '0.25rem',
+                            backgroundColor: hasStock ? '#ecfdf5' : '#f1f5f9',
+                            color: hasStock ? '#15803d' : '#94a3b8',
+                          }}
+                        >
+                          {stock} in WH
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: isSelected ? '#0f172a' : '#334155' }}>
+                        {cat.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 3. Stock Available & Production Allocation Question */}
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                borderRadius: '0.5rem',
+                border: selectedWarehouseItem ? '2px solid #0284c7' : '1px solid #cbd5e1',
+                padding: '1.25rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1rem',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.625rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <Warehouse size={16} color="#0284c7" />
+                  <h3 style={{ margin: 0, fontSize: '0.9375rem', fontWeight: 700, color: '#0f172a' }}>
+                    3. Stock Available in Warehouse: {totalCategoryStock} pcs of {selectedCategory.toUpperCase()}
+                  </h3>
+                </div>
+                <span
+                  style={{
+                    padding: '0.2rem 0.55rem',
+                    borderRadius: '0.25rem',
+                    backgroundColor: totalCategoryStock > 0 ? '#f0fdf4' : '#fef2f2',
+                    color: totalCategoryStock > 0 ? '#16a34a' : '#dc2626',
+                    fontWeight: 800,
+                    fontSize: '0.75rem',
+                  }}
+                >
+                  {totalCategoryStock > 0 ? `${totalCategoryStock} pcs Available` : '0 pcs in Warehouse'}
+                </span>
+              </div>
+
+              {isWhItemsLoading ? (
+                <div style={{ padding: '1.5rem', textAlign: 'center', color: '#64748b', fontSize: '0.8125rem' }}>
+                  Scanning warehouse inventory...
+                </div>
+              ) : totalCategoryStock === 0 ? (
+                <div
+                  style={{
+                    backgroundColor: '#fffbeb',
+                    border: '1px solid #fde68a',
+                    borderRadius: '0.375rem',
+                    padding: '1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.5rem',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#92400e', fontWeight: 800, fontSize: '0.8125rem' }}>
+                    <AlertCircle size={16} /> No Available Stock of {selectedCategory.toUpperCase()} in {warehouses.find((w) => w.id === selectedWarehouseId)?.name || 'Warehouse'}
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: '#b45309', lineHeight: 1.4 }}>
+                    All items in this system enter via supplier <strong>Goods Received Notes (GRN)</strong>. To add {selectedCategory.toUpperCase()} items to production, receive inventory from a supplier first in Procurement.
+                  </p>
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => navigate({ to: '/admin/purchases' })}
+                      style={{
+                        backgroundColor: '#0284c7',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '0.4rem 0.85rem',
+                        borderRadius: '0.25rem',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Go to Procurement &amp; Process GRN →
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Dedicated Allocation Question: How much [Category] items add on production? */}
+                  <div
+                    style={{
+                      backgroundColor: '#f0f9ff',
+                      border: '1.5px solid #0284c7',
+                      borderRadius: '0.5rem',
+                      padding: '1rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.75rem',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div>
+                        <span style={{ fontSize: '0.6875rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0284c7' }}>
+                          Production Allocation Question
+                        </span>
+                        <h4 style={{ margin: '0.15rem 0 0', fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>
+                          How much {selectedCategory.toUpperCase()} items do you want to add on production?
+                        </h4>
+                      </div>
+                      <span style={{ backgroundColor: '#dbeafe', color: '#1d4ed8', fontWeight: 800, fontSize: '0.8125rem', padding: '0.25rem 0.65rem', borderRadius: '0.375rem' }}>
+                        Max Available: {selectedWarehouseItem ? selectedWarehouseItem.quantity : totalCategoryStock} pcs
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', border: '1.5px solid #0284c7', borderRadius: '0.375rem', backgroundColor: '#fff', overflow: 'hidden' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleQuantityChange(quantityToProduce - 1)}
+                          disabled={quantityToProduce <= 1}
+                          style={{ padding: '0.45rem 0.8rem', background: '#f8fafc', border: 'none', borderRight: '1px solid #cbd5e1', fontWeight: 800, cursor: 'pointer', fontSize: '1rem' }}
+                        >
+                          -
+                        </button>
+                        <input
+                          type="number"
+                          min={1}
+                          max={Number(selectedWarehouseItem?.quantity) || totalCategoryStock}
+                          value={quantityToProduce}
+                          onChange={(e) => handleQuantityChange(Number(e.target.value))}
+                          style={{ width: '70px', textAlign: 'center', border: 'none', fontWeight: 800, fontSize: '1.125rem', color: '#0f172a', padding: '0.4rem 0' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleQuantityChange(quantityToProduce + 1)}
+                          disabled={quantityToProduce >= (Number(selectedWarehouseItem?.quantity) || totalCategoryStock)}
+                          style={{ padding: '0.45rem 0.8rem', background: '#f8fafc', border: 'none', borderLeft: '1px solid #cbd5e1', fontWeight: 800, cursor: 'pointer', fontSize: '1rem' }}
+                        >
+                          +
+                        </button>
+                      </div>
+                      <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#475569' }}>pieces</span>
+
+                      <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                        {[1, 5, 10].map((num) => {
+                          const max = Number(selectedWarehouseItem?.quantity) || totalCategoryStock;
+                          if (num > max) return null;
+                          return (
+                            <button
+                              key={num}
+                              type="button"
+                              onClick={() => handleQuantityChange(num)}
+                              style={{
+                                padding: '0.35rem 0.65rem',
+                                borderRadius: '0.25rem',
+                                border: '1px solid #cbd5e1',
+                                backgroundColor: quantityToProduce === num ? '#0284c7' : '#ffffff',
+                                color: quantityToProduce === num ? '#ffffff' : '#0f172a',
+                                fontWeight: 700,
+                                fontSize: '0.75rem',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              {num} pc{num > 1 ? 's' : ''}
+                            </button>
+                          );
+                        })}
+                        <button
+                          type="button"
+                          onClick={() => handleQuantityChange(Number(selectedWarehouseItem?.quantity) || totalCategoryStock)}
+                          style={{
+                            padding: '0.35rem 0.65rem',
+                            borderRadius: '0.25rem',
+                            border: '1px solid #0284c7',
+                            backgroundColor: quantityToProduce === (Number(selectedWarehouseItem?.quantity) || totalCategoryStock) ? '#0284c7' : '#f0f9ff',
+                            color: quantityToProduce === (Number(selectedWarehouseItem?.quantity) || totalCategoryStock) ? '#ffffff' : '#0284c7',
+                            fontWeight: 800,
+                            fontSize: '0.75rem',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          All Available ({Number(selectedWarehouseItem?.quantity) || totalCategoryStock} pcs)
+                        </button>
+                      </div>
+                    </div>
+
+                    <div style={{ fontSize: '0.75rem', color: '#0369a1', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <Check size={14} />
+                      <span>
+                        <strong>Allocation Result:</strong> {quantityToProduce} pcs will be transferred from {warehouses.find((w) => w.id === selectedWarehouseId)?.name || 'Warehouse'} to {physicalStores.find((s) => s.id === selectedStoreId)?.name || 'Store'} storefront. Remaining in warehouse: {Math.max(0, (Number(selectedWarehouseItem?.quantity) || totalCategoryStock) - quantityToProduce)} pcs.
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Warehouse Batch Selection */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.35rem' }}>
+                      Select Item Batch from Warehouse ({matchingCategoryItems.length} batches available) *
+                    </label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '200px', overflowY: 'auto' }}>
+                      {matchingCategoryItems.map((item: any) => {
+                        const isSelected = selectedWarehouseItem?.id === item.id;
+                        return (
+                          <div
+                            key={item.id}
+                            onClick={() => handleSelectWarehouseItem(item)}
+                            style={{
+                              padding: '0.65rem 0.85rem',
+                              borderRadius: '0.375rem',
+                              border: isSelected ? '1.5px solid #0284c7' : '1px solid #e2e8f0',
+                              backgroundColor: isSelected ? '#f0f9ff' : '#ffffff',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <div>
+                              <div style={{ fontWeight: 700, fontSize: '0.8125rem', color: isSelected ? '#0369a1' : '#0f172a' }}>
+                                {item.itemTitle}
+                              </div>
+                              <div style={{ fontSize: '0.6875rem', color: '#64748b', display: 'flex', gap: '0.6rem', marginTop: '0.15rem' }}>
+                                <span>GRN: <strong>{item.grnNumber}</strong></span>
+                                <span>Supplier: <strong>{item.supplierName}</strong></span>
+                                <span>Cost: <strong>ETB {Number(item.unitCostEtb || 0).toLocaleString()}</strong> / pc</span>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span style={{ padding: '0.15rem 0.45rem', borderRadius: '0.25rem', backgroundColor: '#f0fdf4', color: '#16a34a', fontWeight: 800, fontSize: '0.75rem' }}>
+                                {item.quantity} in WH
+                              </span>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: isSelected ? '#0284c7' : '#94a3b8' }}>
+                                {isSelected ? '✓ Selected' : 'Select'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* 3. Product Name & Atelier Notes */}
             <div
               style={{
                 backgroundColor: '#ffffff',
@@ -568,8 +1140,8 @@ function CreateProductPageComponent() {
                   isCustomMargin={isCustomMargin}
                   handleProfitMarginPreset={handleProfitMarginPreset}
                   handleCustomMarginChange={handleCustomMarginChange}
-                  initialStock={initialStock}
-                  setInitialStock={setInitialStock}
+                  initialStock={quantityToProduce}
+                  setInitialStock={handleQuantityChange}
                   netUnitProfit={netUnitProfit}
                 />
               </div>
@@ -715,8 +1287,8 @@ function CreateProductPageComponent() {
                 {isUploadingToR2
                   ? 'Streaming to Cloudflare R2...'
                   : isSubmitting
-                  ? 'Publishing Product...'
-                  : 'Publish to Inventory'}
+                  ? 'Adding to Storefront Production...'
+                  : `Add ${quantityToProduce} ${(selectedCategory || 'Item').toUpperCase()} ${quantityToProduce === 1 ? 'Item' : 'Items'} to Storefront Production`}
               </button>
             </div>
           </div>

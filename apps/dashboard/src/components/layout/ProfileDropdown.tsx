@@ -101,7 +101,7 @@ export const ProfileDropdown: React.FC = () => {
     setIsOpen(false);
     if (confirm('Are you sure you want to log out of ASTU Express Admin?')) {
       await logout();
-      window.location.reload();
+      window.location.href = '/auth';
     }
   };
 

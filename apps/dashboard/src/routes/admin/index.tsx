@@ -71,7 +71,7 @@ function OverviewComponent() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', fontFamily: 'Hanken Grotesk, sans-serif' }}>
-            R2 Express Mini ERP Overview
+            ASTU Express Mini ERP Overview
           </h2>
           <p style={{ margin: '0.25rem 0 0', color: '#64748b', fontSize: '0.875rem' }}>
             Operations & Logistics monitoring for <strong style={{ color: '#0284c7' }}>{activeStore.name}</strong>
@@ -164,14 +164,14 @@ function OverviewComponent() {
             <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>
               Low Stock Warnings
             </h3>
-            <Link to="/admin/inventory" style={{ fontSize: '0.75rem', color: '#0284c7', fontWeight: 700, textDecoration: 'none' }}>
-              View Inventory &rarr;
+            <Link to="/admin/warehouse" style={{ fontSize: '0.75rem', color: '#0284c7', fontWeight: 700, textDecoration: 'none' }}>
+              View Warehouse Inventory &rarr;
             </Link>
           </div>
 
           {lowStockProducts.length === 0 ? (
             <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#64748b', fontSize: '0.8125rem' }}>
-              All R2 Express inventory levels are healthy.
+              All ASTU Express inventory levels are healthy.
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>

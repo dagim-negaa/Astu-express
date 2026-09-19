@@ -12,6 +12,10 @@ export class OrderService {
     return this.repo.findById(id);
   }
 
+  async trackOrder(query: string): Promise<any | null> {
+    return this.repo.trackOrder(query);
+  }
+
   async createOrder(input: CreateOrderInput, items?: any[]): Promise<Order> {
     if (!input.customerEmail) {
       throw new Error("Customer email is required to place an order");
