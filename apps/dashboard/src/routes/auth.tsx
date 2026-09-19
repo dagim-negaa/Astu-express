@@ -5,7 +5,7 @@ import { authClient } from '../lib/auth-client';
 import { useAdminStore } from '../store/AdminStore';
 import { useCustomerAuth } from '../hooks/useCustomerAuth';
 import { StorefrontLayout } from '../components/storefront/StorefrontLayout';
-import { LogIn, UserPlus, Shield, CheckCircle2, AlertCircle, UserCheck, LogOut, ShoppingBag, Package } from 'lucide-react';
+import { LogIn, UserPlus, Shield, CheckCircle2, AlertCircle, UserCheck, LogOut, ShoppingBag, Ticket, Truck } from 'lucide-react';
 
 export const Route = createFileRoute('/auth')({
   component: AuthComponent,
@@ -212,21 +212,29 @@ function AuthComponent() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="grid grid-cols-3 gap-2 mb-4">
               <Link
                 to="/shop"
-                className="py-3 px-4 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                className="py-3 px-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold transition-colors flex flex-col items-center justify-center gap-1 shadow-sm text-center"
               >
-                <ShoppingBag size={15} />
-                <span>Shop Garments</span>
+                <ShoppingBag size={16} />
+                <span>Shop</span>
               </Link>
               <Link
                 to="/orders"
                 search={{}}
-                className="py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
+                className="py-3 px-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition-colors flex flex-col items-center justify-center gap-1 text-center border border-slate-200"
               >
-                <Package size={15} />
-                <span>Order History</span>
+                <Ticket size={16} className="text-sky-600" />
+                <span>Tickets</span>
+              </Link>
+              <Link
+                to="/track"
+                search={{}}
+                className="py-3 px-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition-colors flex flex-col items-center justify-center gap-1 text-center border border-slate-200"
+              >
+                <Truck size={16} className="text-sky-600" />
+                <span>Track</span>
               </Link>
             </div>
 

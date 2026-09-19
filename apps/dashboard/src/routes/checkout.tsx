@@ -4,7 +4,7 @@ import { useCart } from '../hooks/useCart';
 import { useCustomerAuth } from '../hooks/useCustomerAuth';
 import { apiClient } from '../lib/api';
 import { StorefrontLayout } from '../components/storefront/StorefrontLayout';
-import { CheckCircle2, Truck, ShieldCheck, CreditCard, Banknote, Smartphone, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Truck, ShieldCheck, CreditCard, Banknote, Smartphone, AlertCircle, Ticket } from 'lucide-react';
 
 export const Route = createFileRoute('/checkout')({
   component: CheckoutComponent,
@@ -88,9 +88,9 @@ function CheckoutComponent() {
               <span className="text-sm font-black text-sky-700">ETB {totalPrice.toLocaleString()}</span>
             </div>
           </div>
-          <div className="flex justify-center gap-4">
+          <div className="flex flex-wrap justify-center gap-3">
             <Link
-              to="/orders"
+              to="/track"
               search={{ q: trackingNumber || orderId } as any}
               className="px-6 py-3 bg-sky-600 text-white rounded-xl font-bold text-sm hover:bg-sky-500 transition-colors shadow-sm flex items-center gap-2"
             >
@@ -98,8 +98,16 @@ function CheckoutComponent() {
               <span>Track Package Live</span>
             </Link>
             <Link
+              to="/orders"
+              search={{ email: form.email } as any}
+              className="px-6 py-3 bg-slate-100 text-slate-800 rounded-xl font-bold text-sm hover:bg-slate-200 transition-colors flex items-center gap-2 border border-slate-200"
+            >
+              <Ticket size={16} className="text-sky-600" />
+              <span>View Ticket History</span>
+            </Link>
+            <Link
               to="/"
-              className="px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-200 transition-colors"
+              className="px-6 py-3 bg-white text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-50 transition-colors border border-slate-200"
             >
               Back to Home
             </Link>

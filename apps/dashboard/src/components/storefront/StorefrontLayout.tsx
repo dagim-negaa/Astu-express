@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from '@tanstack/react-router';
-import { ShoppingBag, Search, User, Menu, X, Shield, Truck, Phone, MapPin, Mail, Package, LogOut } from 'lucide-react';
+import { ShoppingBag, Search, User, Menu, X, Shield, Truck, Phone, MapPin, Mail, LogOut } from 'lucide-react';
 import { useCart } from '../../hooks/useCart';
 import { useCustomerAuth } from '../../hooks/useCustomerAuth';
 
@@ -13,7 +13,8 @@ export function StorefrontLayout({ children }: { children: React.ReactNode }) {
   const navLinks = [
     { label: 'Storefront', path: '/' },
     { label: 'Shop Catalog', path: '/shop' },
-    { label: 'Order History', path: '/orders' },
+    { label: 'Track Order', path: '/track' },
+    { label: 'Ticket History', path: '/orders' },
   ];
 
   return (
@@ -76,20 +77,6 @@ export function StorefrontLayout({ children }: { children: React.ReactNode }) {
 
             {/* Actions */}
             <div className="flex items-center gap-2 sm:gap-3">
-              <Link
-                to="/orders"
-                search={{}}
-                className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 text-xs font-bold border ${
-                  location.pathname === '/orders'
-                    ? 'bg-sky-50 border-sky-300 text-sky-700 shadow-sm'
-                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900'
-                }`}
-                title="Search by Tracking Number or Email"
-              >
-                <Package size={15} className="text-sky-600" />
-                <span className="hidden sm:inline">Order History</span>
-              </Link>
-
               <Link
                 to="/shop"
                 className="p-2 text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors"
@@ -236,7 +223,8 @@ export function StorefrontLayout({ children }: { children: React.ReactNode }) {
             <div>
               <h3 className="text-white text-xs font-bold uppercase tracking-wider mb-3">Customer Support</h3>
               <ul className="space-y-2 text-xs">
-                <li><Link to="/orders" search={{}} className="hover:text-white transition-colors">Order History & Tracking</Link></li>
+                <li><Link to="/track" search={{}} className="hover:text-white transition-colors">Track Order & Shipment</Link></li>
+                <li><Link to="/orders" search={{}} className="hover:text-white transition-colors">Ticket History & Invoices</Link></li>
                 <li><Link to="/cart" className="hover:text-white transition-colors">View Cart & Checkout</Link></li>
                 {!isLoggedIn ? (
                   <li><Link to="/auth" className="hover:text-white transition-colors">Customer Login / Register</Link></li>

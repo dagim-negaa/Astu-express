@@ -60,16 +60,9 @@ function HomeComponent() {
             <div className="flex flex-wrap items-center gap-3">
               <Link
                 to="/shop"
-                className="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white px-6 py-3 rounded-md font-bold text-sm shadow-sm"
+                className="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-sm transition-all"
               >
                 Shop Catalog <ArrowRight size={16} />
-              </Link>
-              <Link
-                to="/orders"
-                search={{}}
-                className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white border border-slate-700 px-6 py-3 rounded-md font-semibold text-sm shadow-sm"
-              >
-                <Package size={16} /> Track Shipment
               </Link>
             </div>
           </div>
