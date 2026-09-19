@@ -11,17 +11,20 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": {
-        target: "http://localhost:8787",
+        target: process.env.VITE_API_URL || "https://astu-express-api.astu-express-api.workers.dev",
         changeOrigin: true,
+        secure: false,
       },
       "/storage": {
-        target: "http://localhost:8787",
+        target: process.env.VITE_API_URL || "https://astu-express-api.astu-express-api.workers.dev",
         changeOrigin: true,
+        secure: false,
         rewrite: (path) => path.replace(/^\/storage/, "/api/assets/storage"),
       },
       "/r2": {
-        target: "http://localhost:8787",
+        target: process.env.VITE_API_URL || "https://astu-express-api.astu-express-api.workers.dev",
         changeOrigin: true,
+        secure: false,
         rewrite: (path) => path.replace(/^\/r2/, "/api/assets/r2"),
       },
     },

@@ -193,11 +193,15 @@ export function getAssetsBaseUrl(): string {
   if (_customAssetsBaseUrl) return _customAssetsBaseUrl;
 
   // Browser environment
-  if (typeof globalThis !== 'undefined' && (globalThis as any).window?.location?.origin) {
-    return `${(globalThis as any).window.location.origin}/api/assets`;
+  if (typeof globalThis !== 'undefined' && (globalThis as any).window?.location) {
+    const loc = (globalThis as any).window.location;
+    if (loc.hostname && (loc.hostname.includes('workers.dev') || loc.hostname.includes('pages.dev'))) {
+      const apiHost = loc.origin.replace('astu-express-dashboard', 'astu-express-api');
+      return `${apiHost}/api/assets`;
+    }
   }
 
-  return 'http://localhost:8787/api/assets';
+  return 'https://astu-express-api.astu-express-api.workers.dev/api/assets';
 }
 
 /**
@@ -227,9 +231,11 @@ export function resolveImageUrl(
 
   // Already a proxy or relative asset URL (e.g. /api/assets/..., /api/storage/..., /api/r2/...)
   if (trimmed.startsWith('/api/assets/') || trimmed.startsWith('/api/storage/') || trimmed.startsWith('/api/r2/')) {
-    if (baseUrl && !trimmed.startsWith(cleanBase)) {
+    if (cleanBase.startsWith('http://') || cleanBase.startsWith('https://')) {
       const cleanRoot = cleanBase.replace(/\/api\/assets$/, '');
-      return `${cleanRoot}${trimmed}`;
+      if (!trimmed.startsWith(cleanRoot)) {
+        return `${cleanRoot}${trimmed}`;
+      }
     }
     return trimmed;
   }

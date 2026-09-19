@@ -18,8 +18,41 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const title = product.title || product.name || 'Untitled Product';
   const price = product.priceEtb ?? product.price ?? 0;
-  const rawImage = (product.images && product.images[0]) || product.image;
-  const image = resolveImageUrl(rawImage, 'preview');
+
+  // Safely parse images
+  let rawImages: string[] = [];
+  if (Array.isArray(product.images)) {
+    rawImages = product.images;
+  } else if (typeof product.images === 'string') {
+    try {
+      const parsed = JSON.parse(product.images);
+      rawImages = Array.isArray(parsed) ? parsed : [parsed];
+    } catch {
+      rawImages = product.images ? [product.images] : [];
+    }
+  }
+
+  // Safely parse colors to extract front angle photo
+  let parsedColors: any[] = [];
+  if (Array.isArray((product as any).colors)) {
+    parsedColors = (product as any).colors;
+  } else if (typeof (product as any).colors === 'string') {
+    try {
+      const parsed = JSON.parse((product as any).colors);
+      parsedColors = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      parsedColors = [];
+    }
+  }
+
+  const firstColor = parsedColors[0];
+  const heroImage =
+    firstColor?.images?.front ||
+    rawImages[0] ||
+    (product as any).imageUrl ||
+    product.image;
+
+  const image = resolveImageUrl(heroImage, 'preview');
 
   return (
     <Link to="/product/$id" params={{ id: product.id }} className="block group">
@@ -29,6 +62,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <img
               src={image}
               alt={title}
+              loading="lazy"
               onError={(e) => {
                 e.currentTarget.onerror = null;
                 e.currentTarget.src = FALLBACK_PRODUCT_IMAGE;
