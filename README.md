@@ -15,7 +15,7 @@
 
 **ASTU Express** is a cloud-native, web-based Mini Enterprise Resource Planning (ERP) and e-commerce shipping platform tailored for Ethiopian retail and garment businesses. 
 
-Ethiopian small and medium retail enterprises frequently face operational bottlenecks due to fragmented spreadsheets, manual paper records, and disconnected messaging apps. These issues often cause inventory discrepancies, lost orders, delayed shipping, and lack of real-time financial visibility.
+Ethiopian small and medium retail enterprises frequently face operational bottlenecks due to fragmented spreadsheets, manual paper records, and disconnected messaging apps. These issues often cause inventory discrepancies, lost orders, delayed shipping, and lack of Real-Time financial visibility.
 
 ASTU Express solves these challenges with an integrated, single-platform architecture combining:
 1. **A Customer Storefront & Live Order Tracking System**

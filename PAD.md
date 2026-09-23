@@ -4,7 +4,7 @@
 
 **Program**: [Software Engineering (SE) / Computer Science and Engineering (CSE)]
 
-**Team Members**: [Member 1], [Member 2], [Member 3], ... (max. 7–10 students)
+**Team Members**:[Member 1], [Member 2], [Member 3], ... (max. 7–10 students)
 
 **Project Coordinator**: [Coordinator Name]
 
@@ -32,13 +32,13 @@ Apply these settings when converting this document to the required PDF (max. 20 
 | Tables | Full-width, no wrapping where possible |
 | Page budget | ~17 content pages (well within the 20-page limit) |
 
-**Export tip:** In Word/Google Docs, set these values on the document styles before pasting the content, then "Save as PDF". Tables render best with the table font set to 10 pt and header rows bolded.
+**Export tip:** In Word/Google Docs, set these values on the document styles before pasting the content, then "Save as PDF". Tables render best with the tables font set to 10 pt and header rows bolded.
 
 ---
 
 ## 1. Executive Summary
 
-ASTU Express is a web-based mini Enterprise Resource Planning (ERP) system designed to manage the complete business operations of an Ethiopian online retail and garment business. The system addresses a well-known operational failure in small and medium-sized Ethiopian retail enterprises: business data is scattered across spreadsheets, paper records, and disconnected messaging tools, which leads to inventory inaccuracy, lost or duplicate orders, unclear finances, inefficient procurement, and no access control.
+ASTU Express is a web-based mini Enterprise Resource Planning (ERP) system designed to manage the complete business operations and to improve  an Ethiopian online retail and garment business. The system addresses a well-known operational failure in small and medium-sized Ethiopian retail enterprises: business data is scattered across spreadsheets, paper records, and disconnected messaging tools, which leads to inventory inaccuracy, lost or duplicate orders, unclear finances, inefficient procurement, and no access control.
 
 The proposed solution is a single, unified web platform with two integrated surfaces: a customer-facing storefront for browsing and purchasing products, and a role-based back-office dashboard for managing products, orders, customers, staff, stores, suppliers, purchase orders, expenses, shipments, banking, warehouse inventory, and financial reports.
 
