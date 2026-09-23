@@ -12,4 +12,5 @@ export interface CatalogFilter {
   page?: number;
 }
 
+
 export type { Garment, CreateGarmentInput, GarmentStatus };

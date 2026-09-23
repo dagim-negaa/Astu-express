@@ -14,6 +14,7 @@ export function serializeJsonField(val: any): string | null {
   }
 }
 
+
 export function parseJsonField<T>(val: string | null | undefined, fallback: T): T {
   if (!val) return fallback;
   try {
