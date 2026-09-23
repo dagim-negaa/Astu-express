@@ -74,7 +74,7 @@ export interface AdminCustomer {
   createdAt: string;
 }
 
-export type StaffRole = "Admin" | "Manager" | "Operator" | "Owner";
+export type StaffRole = "Admin" | "manager" | "Operator" | "Owner";
 
 export function normalizeStaffRole(rawRole?: string): StaffRole {
   const r = (rawRole || "").toLowerCase();
