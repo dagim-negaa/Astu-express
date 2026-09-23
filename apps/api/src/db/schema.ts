@@ -18,6 +18,7 @@ export const user = sqliteTable('user', {
   updatedAt: integer('updatedAt', { mode: 'timestamp' }).notNull(),
 });
 
+
 export const session = sqliteTable('session', {
   id: text('id').primaryKey(),
   expiresAt: integer('expiresAt', { mode: 'timestamp' }).notNull(),
