@@ -41,7 +41,7 @@
   .framework {
     z-index: 1;
     top: 34px;
-    height: 28px;
+    height: 27px;
     transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
       scale(1.4);
   }
@@ -84,7 +84,7 @@
   }
 
   .icon {
-    margin-bottom: 16px;
+    margin-bottom: 15px;
     width: 22px;
     height: 22px;
   }
