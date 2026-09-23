@@ -66,14 +66,14 @@ export function createAuth(d1: D1Database, secret?: string, baseURL?: string) {
       },
     },
     trustedOrigins: [
-      'http://localhost:5173',
-      'http://localhost:5174',
-      'http://localhost:3000',
-      'http://localhost:8787',
-      'http://127.0.0.1:5173',
-      'http://127.0.0.1:8787',
-      'https://astu-express-dashboard.astu-express-api.workers.dev',
-      'https://astu-express-api.astu-express-api.workers.dev',
+      'http://localhost:5173', // localhost server
+      'http://localhost:5174', // localhost server
+      'http://localhost:3000', // localhost server
+      'http://localhost:8787', // localhost server
+      'http://127.0.0.1:5173', // localhost server
+      'http://127.0.0.1:8787', // localhost server
+      'https://astu-express-dashboard.astu-express-api.workers.dev',// api url
+      'https://astu-express-api.astu-express-api.workers.dev',//web url
       'https://*.workers.dev',
       'https://*.pages.dev',
     ],
