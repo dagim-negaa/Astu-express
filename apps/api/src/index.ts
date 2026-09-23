@@ -56,6 +56,7 @@ export function getR2(env: any): R2Bucket | undefined {
   );
 }
 
+
 const ALLOWED_ORIGINS = [
   "http://localhost:5173",
   "http://localhost:5174",
